@@ -21,7 +21,7 @@ Jenkins is an open-source automation server used for continuous integration and 
 ### Installation on Linux (Ubuntu/Debian)
 ```bash
 sudo apt update
-sudo apt install openjdk-11-jdk -y
+sudo apt install openjdk-17-jdk -y
 wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
 echo "deb http://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
 sudo apt update
@@ -149,5 +149,4 @@ Jenkins is a powerful automation server that enhances software development effic
 
 ---
 
-Would you like additional sections or specific use cases added?
-
+![Documentation](https://www.jenkins.io/doc/)
