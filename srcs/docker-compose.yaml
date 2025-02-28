@@ -12,6 +12,7 @@ services:
       - gitlab_data:/var/opt/gitlab
       - gitlab_logs:/var/log/gitlab
       - gitlab_config:/etc/gitlab
+    image: my_gitlab:0.1.0
     build:
       context: ./requirements/GitLab
       dockerfile: Dockerfile
@@ -29,6 +30,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+    image: my_jenkins:0.1.0
     build:
       context: ./requirements/Jenkins
       dockerfile: Dockerfile
@@ -45,6 +47,7 @@ services:
       - "8082:8081"
     volumes:
       - nexus_data:/nexus-data
+    image: my_nexus:0.1.0
     build:
       context: ./requirements/Nexus
       dockerfile: Dockerfile

@@ -1,5 +1,5 @@
 # Use the official Jenkins LTS image as base
-FROM jenkins/jenkins:lts
+FROM jenkins/jenkins:jdk17
 
 # Switch to root to install dependencies
 USER root

@@ -1,5 +1,5 @@
 # Use the official GitLab Community Edition (CE) image
-FROM gitlab/gitlab-ce:latest
+FROM gitlab/gitlab-ce:nightly
 
 # Set environment variables for first-time setup
 ENV GITLAB_OMNIBUS_CONFIG="external_url 'http://gitlab.local'; \
