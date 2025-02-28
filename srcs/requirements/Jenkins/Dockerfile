@@ -1,28 +1,27 @@
-# Use the official Jenkins LTS image as base
-FROM jenkins/jenkins:jdk17
+FROM jenkins/jenkins:2.492.1-jdk17
 
-# Switch to root to install dependencies
 USER root
 
-# Install necessary dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    unzip \
-    sudo
+# Install Docker CLI
+RUN apt-get update && apt-get install -y lsb-release
 
-# Create a Jenkins user with sudo privileges
-RUN echo "jenkins ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN curl -fsSLo /usr/share/keyrings/docker-archive-keyring.asc \
+  https://download.docker.com/linux/debian/gpg
 
-# Switch back to Jenkins user
+RUN echo "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/usr/share/keyrings/docker-archive-keyring.asc] \
+  https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+
+RUN apt-get update && apt-get install -y docker-ce-cli
+
+# Create directory for plugins list
+RUN mkdir -p /usr/share/jenkins/ref/conf
+
+# Copy plugins.txt to appropriate directory
+COPY conf/plugins.txt /usr/share/jenkins/ref/conf/plugins.txt
+
 USER jenkins
 
-# Set up initial plugins and configuration (optional)
-COPY /conf/plugins.txt /usr/share/jenkins/plugins.txt
-RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/plugins.txt
-
-# Expose necessary ports
-EXPOSE 8080 50000
-
-# Define default startup command
-CMD ["jenkins.sh"]
+# Install plugins from plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/conf/plugins.txt

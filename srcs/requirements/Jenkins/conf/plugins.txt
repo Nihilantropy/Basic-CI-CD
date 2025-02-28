@@ -1,5 +1,51 @@
-git
-blueocean
-pipeline-stage-view
-workflow-aggregator
-docker-plugin
+# Core Jenkins plugins
+workflow-aggregator:latest
+pipeline-model-definition:latest
+git:latest
+credentials:latest
+credentials-binding:latest
+ssh-credentials:latest
+
+# GitLab integration
+gitlab-plugin:latest
+gitlab-api:latest
+gitlab-branch-source:latest
+gitlab-oauth:latest
+gitlab-logo:latest
+
+# Docker integration
+docker-workflow:latest
+docker-plugin:latest
+
+# BlueOcean UI and pipeline visualization
+blueocean:latest
+blueocean-dashboard:latest
+blueocean-git-pipeline:latest
+blueocean-pipeline-api-impl:latest
+blueocean-web:latest
+
+# Build triggers
+build-timeout:latest
+timestamper:latest
+ws-cleanup:latest
+
+# Security plugins
+matrix-auth:latest
+role-strategy:latest
+antisamy-markup-formatter:latest
+
+# Pipeline utilities
+pipeline-stage-view:latest
+pipeline-utility-steps:latest
+pipeline-graph-analysis:latest
+
+# SCM-related
+git-client:latest
+git-server:latest
+github:latest
+github-branch-source:latest
+
+# Useful tools
+ansicolor:latest
+build-monitor-plugin:latest
+dashboard-view:latest

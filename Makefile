@@ -8,6 +8,7 @@ TAG = 0.1.0
 
 # List of CI/CD service names to identify related images
 PROJECT_SERVICES = gitlab \
+                   jenkins-docker \
                    jenkins \
                    nexus
 
@@ -16,6 +17,7 @@ PROJECT_VOLUMES = gitlab_data \
                    gitlab_logs \
                    gitlab_config \
                    jenkins_home \
+				   jenkins-docker-certs \
                    nexus_data
 PROJECT_NETWORKS = $(FOLDER_PREFIX)gitlab_network
 

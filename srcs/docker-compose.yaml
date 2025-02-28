@@ -1,5 +1,4 @@
 services:
-
   ### GITLAB ###
   gitlab:
     container_name: gitlab
@@ -21,19 +20,45 @@ services:
     networks:
       - gitlab_network
 
+  ### JENKINS DOCKER-IN-DOCKER ###
+  jenkins-docker:
+    container_name: jenkins-docker
+    image: docker:dind
+    restart: always
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes:
+      - jenkins-docker-certs:/certs/client
+      - jenkins_home:/var/jenkins_home
+    ports:
+      - "2376:2376"
+    command: --storage-driver overlay2
+    networks:
+      gitlab_network:
+        aliases:
+          - docker
+
   ### JENKINS ###
   jenkins:
     container_name: jenkins
-    restart: always
+    restart: on-failure
+    depends_on:
+      - jenkins-docker
     ports:
       - "8081:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
     image: my_jenkins:0.1.0
     build:
       context: ./requirements/Jenkins
       dockerfile: Dockerfile
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
     env_file:
       - ./requirements/Jenkins/.env
     networks:
@@ -65,4 +90,5 @@ volumes:
   gitlab_logs:
   gitlab_config:
   jenkins_home:
+  jenkins-docker-certs:
   nexus_data:

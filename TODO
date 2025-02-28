@@ -1,0 +1,3 @@
+Have to solve Jenkins Job / Git Lab WebHook communication issue
+
+Build the Jenkinsfile in the flask-app to configure the pipeline
