@@ -1,3 +1,2 @@
-Have to solve Jenkins Job / Git Lab WebHook communication issue
-
-Build the Jenkinsfile in the flask-app to configure the pipeline
+create the helm chart for the flask app with a configmap that uses a script in order to 1) download the binary 2) execute it.
+if this approach doens't work try to do it all in the command section of the deployment

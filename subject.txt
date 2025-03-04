@@ -15,8 +15,8 @@ Containerize the application using a Dockerfile and save all files to the GitLab
 - Create a Helm Chart that allows configuring the following via `values.yaml`:  
   - Number of deployment replicas.  
   - Agent name (to replace the *"..."* placeholder in the output string).  
-- Implement a **Liveness probe** pointing to the health-check endpoint.  
-- Deployment of the chart will be done **manually**.  
+- Implement a **Liveness probe** pointing to the health-check endpoint.
+- Deployment of the chart will be done **manually**.
 *Note: The application will start by downloading the binary from Nexus and executing it.*  
 
 **Kubernetes Setup**:  

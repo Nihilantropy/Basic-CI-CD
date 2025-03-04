@@ -44,3 +44,12 @@
 
 *solution* -> https://docs.gitlab.com/security/webhooks/#allowlist-for-local-requests 
 	This article explain why certain ip address range are disabled by defautl and how to enable it.
+
+
+## **Day 3**
+
+### Succesfully enable local webhook triggers from push request
+
+### Worked on the Jenkinsfile to correctly setup the docker agent from a custom Dockerfile, test the app, build it and push it to nexus container instance
+
+### setting up cluster k3s
