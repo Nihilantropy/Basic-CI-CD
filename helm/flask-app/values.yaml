@@ -1,4 +1,5 @@
 replicaCount: 2
 
-env:
-  AGENT_NAME: "MyAgent"
+agentName: "DefaultAgent"
+
+nodePort: 30080

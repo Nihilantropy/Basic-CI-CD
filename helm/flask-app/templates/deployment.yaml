@@ -1,34 +1,41 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask-app
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: flask-app
+      app: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: flask-app
+        app: {{ .Release.Name }}
     spec:
       containers:
-      - name: flask-app
-        image: python:3.9-slim
-        command: ["/bin/sh", "-c"]
-        args:
-          - apt-get update && apt-get install -y wget && which wget && ls -l /usr/bin/wget && chmod +x /usr/bin/wget && /bin/bash -ic "/usr/bin/wget --version"&& \
-            /usr/bin/wget -O /usr/local/bin/flask-app.bin http://nexus-service.default.svc.cluster.local:8082/repository/my-artifacts/WmcA/flask-app/1-0/flask-app-1-0.bin &&
-            chmod +x /usr/local/bin/flask-app.bin &&
-            /usr/local/bin/flask-app.bin
-        env:
-        - name: AGENT_NAME
-          value: "{{ .Values.env.AGENT_NAME }}"
-        ports:
-        - containerPort: 5000
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: {{ .Release.Name }}
+          image: ubuntu:22.04
+          command: ["/bin/sh", "-c"]
+          args:
+            - /launch-flask-app.sh
+          env:
+            - name: AGENT_NAME
+              value: {{ .Values.agentName }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+          - name: flask-app-script
+            mountPath: /launch-flask-app.sh
+            subPath: launch-flask-app.sh
+      volumes:
+      - name: flask-app-script
+        configMap:
+          name: flask-app-cm
+          defaultMode: 0755
