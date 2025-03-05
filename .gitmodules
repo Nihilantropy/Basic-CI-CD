@@ -1,3 +1,0 @@
-[submodule "pipeline-project"]
-	path = pipeline-project
-	url = http://gitlab.local/my-awsome-group/pipeline-project.git
