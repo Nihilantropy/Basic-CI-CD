@@ -30,6 +30,12 @@ spec:
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
           volumeMounts:
           - name: flask-app-script
             mountPath: /launch-flask-app.sh

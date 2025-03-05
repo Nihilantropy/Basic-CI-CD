@@ -34,6 +34,11 @@ This application is hosted in a GitLab repository, which is connected to Jenkins
 
 The CI/CD pipeline is defined in the `Jenkinsfile`. It automates testing, building, and deploying the application.
 
+*🚨Important🚨* In this Pipeline we use a `Telegram Bot` to recive libe feedbacks about the pipeline status. To make this work we need 2 credentials set in Jenkins: 
+1 - **telegram-bot-token** to store the bot token.
+2 - **telegram-bot-chatid** to store the chat id.
+[Telegram-Bot-documentation](https://core.telegram.org/bots/tutorial)
+
 ### **Pipeline Breakdown:**
 1. **Custom Docker Agent:** The pipeline runs inside a custom Docker container defined by a `Dockerfile` at the root of the repository.
 2. **Install Dependencies:** Sets up a virtual environment and installs required Python packages.

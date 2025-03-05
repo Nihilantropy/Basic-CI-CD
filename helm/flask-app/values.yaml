@@ -1,5 +1,5 @@
 replicaCount: 2
 
-agentName: "DefaultAgent"
+agentName: "PippoSowlo"
 
 nodePort: 30080

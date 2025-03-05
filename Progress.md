@@ -53,3 +53,13 @@
 ### Worked on the Jenkinsfile to correctly setup the docker agent from a custom Dockerfile, test the app, build it and push it to nexus container instance
 
 ### setting up cluster k3s
+
+## **Day 4**
+
+### Created helm chart for flask-app
+
+### Setup communication between nexus repo and k3s cluster via headless service and custom endpoint
+
+### Enhanced Jenkins pipeline
+
+### Created Telegram bot notification about pipeline status
