@@ -8,15 +8,15 @@ pipeline {
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "nexus:8081"
         NEXUS_REPO = "my-artifacts"
-        NEXUS_CREDENTIALS_ID = credential("nexus-credentials") // change to a credential secret 
+        NEXUS_CREDENTIALS_ID = bb41509b-d0cc-4f65-94a4-755c22441930
         GROUP_ID = "WmcA"
         ARTIFACT_ID = "app"
         ARTIFACT_VERSION = "1.0.0"
         ARTIFACT_TYPE = "bin"
         ARTIFACT_PATH = "dist/app"
 
-		TELEGRAM_BOT_TOKEN = credential("telegram-bot-token") // change to a credential secret
-		TELEGRAM_CHAT_ID = credential("telegram-bot-chatid") // change to a credential secret
+		TELEGRAM_BOT_TOKEN = credentials("telegram-token") // change to a credential secret
+		TELEGRAM_CHAT_ID = credentials("telegram-chat-id") // change to a credential secret
     }
 
     stages {
