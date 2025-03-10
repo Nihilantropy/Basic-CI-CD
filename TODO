@@ -1,4 +1,1 @@
-Create credential for Telegram token and chat id inside Jenkins for the pipeline
-chang enexus id to a credential (already created)
-
 Create an interaction between multiple branches (developer (already working) - and main (not working))
