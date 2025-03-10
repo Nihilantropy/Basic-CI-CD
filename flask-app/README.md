@@ -30,11 +30,16 @@ jsonify({"message": f"Hello, my name is {agent_name} the time is {time}"})
 
 This application is hosted in a GitLab repository, which is connected to Jenkins via an Integration. When a change is pushed to the `developer` branch, GitLab triggers the pipeline by sending a POST request to Jenkins. This ensures automated testing, building, and deployment upon every code update.
 
+### **Triggering the Pipeline:**
+The GitLab repository is configured to send a webhook to the Jenkins service whenever a push is made to the `developer` branch. The webhook sends a POST request to `http://jenkins:8080` (Jenkins internal network in Docker).
+
+By default, GitLab blocks local and private IP ranges for security reasons. To enable this integration, we had to explicitly allow a specific range of private IPs in GitLab's network settings under **Outbound Requests**.
+
 ## 4. Jenkins Pipeline (Jenkinsfile)
 
 The CI/CD pipeline is defined in the `Jenkinsfile`. It automates testing, building, and deploying the application.
 
-*🚨Important🚨* In this Pipeline we use a `Telegram Bot` to recive libe feedbacks about the pipeline status. To make this work we need 2 credentials set in Jenkins: 
+*🚨Important🚨* In this Pipeline we use a `Telegram Bot` to receive live feedback about the pipeline status. To make this work we need 2 credentials set in Jenkins:
 1 - **telegram-bot-token** to store the bot token.
 2 - **telegram-bot-chatid** to store the chat id.
 [Telegram-Bot-documentation](https://core.telegram.org/bots/tutorial)
@@ -46,3 +51,4 @@ The CI/CD pipeline is defined in the `Jenkinsfile`. It automates testing, buildi
 4. **Build Executable:** Uses `pyinstaller` to package the application as a single binary file.
 5. **Archive Executable:** Stores the generated binary as a build artifact.
 6. **Upload to Nexus:** Uploads the binary to a Nexus repository.
+
