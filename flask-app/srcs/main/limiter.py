@@ -31,13 +31,6 @@ class RateLimiterFactory:
             headers_enabled=True,
             retry_after="http-date"  # This provides a timestamp for retry-after
         )
-        
-        # Configure custom filter for rate limiting
-        @limiter.request_filter
-        def health_check_filter():
-            """Exclude health check endpoint from rate limiting."""
-            from flask import request
-            return request.path == "/health"
             
         # Apply rate limiting to our blueprint routes
         if app:
