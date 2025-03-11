@@ -41,7 +41,7 @@ pipeline {
                             python -m venv venv
                             . venv/bin/activate
                             pip install --no-cache-dir -r srcs/requirements.txt
-                            pip install pytest pyinstaller
+                            pip install pytest pyinstaller requests
                         '''
                         sendTelegramMessage("Jenkins: Dependencies installed successfully ✅")
                     } catch (Exception e) {

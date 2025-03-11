@@ -6,5 +6,7 @@ RUN apt-get update && \
     apt-get install -y sudo binutils && \
     rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir -r srcs/requirements.txt && \
+    pip install pytest pyinstaller requests
 # Set the working directory
 WORKDIR /usr/src/app
