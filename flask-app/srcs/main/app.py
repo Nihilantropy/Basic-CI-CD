@@ -6,7 +6,7 @@ from .config import get_config
 from .limiter import RateLimiterFactory
 from .version import VersionManager
 from .errors import register_error_handlers
-from .routes import main_blueprint, init_version_manager
+from .routes import main_blueprint
 
 def create_app():
     """Application factory function.
@@ -25,16 +25,15 @@ def create_app():
     app.logger.info("Starting Flask application...")
     
     # Initialize version manager
-    version_manager = VersionManager(app.config.get('VERSION_FILE_PATH', 'version.info'))
+    version_file_path = app.config.get('VERSION_FILE_PATH', 'version.info')
+    app.logger.debug(f"Using version file path from config: {version_file_path}")
+    version_manager = VersionManager(version_file_path)
     
     # Initialize rate limiter
     limiter = RateLimiterFactory.create_limiter(app)
     
     # Register error handlers
     register_error_handlers(app)
-    
-    # Initialize the version manager in routes
-    init_version_manager(version_manager)
     
     # Register blueprints
     app.register_blueprint(main_blueprint)

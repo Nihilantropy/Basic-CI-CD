@@ -3,28 +3,22 @@ from datetime import datetime
 import os
 import logging
 
+# Import the global version variable
+from .version import _version
+
 # Create a blueprint for the routes
 main_blueprint = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
-
-# Store version_manager as a global variable to be set later
-version_manager = None
-
-def init_version_manager(vm):
-    """Initialize the version manager for use in routes.
-    
-    Args:
-        vm: An initialized VersionManager instance
-    """
-    global version_manager
-    version_manager = vm
 
 @main_blueprint.route('/')
 def hello_world():
     """Main endpoint that returns a greeting with agent name, version and time."""
     agent_name = os.getenv("AGENT_NAME", "Unknown")
     time_now = datetime.now().strftime("%H:%M")
-    version = version_manager.get_version() if version_manager else "unknown"
+    
+    # Use the global version variable
+    logger.debug(f"Version: {_version}")
+    version = _version if _version is not None else "unknown"
     
     logger.debug(f"Handling / request, agent: {agent_name}, time: {time_now}, version: {version}")
     
