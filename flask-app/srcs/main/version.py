@@ -45,3 +45,5 @@ class VersionManager:
         except Exception as e:
             self.logger.error(f"Error initializing version: {e}")
             raise
+
+return _version
