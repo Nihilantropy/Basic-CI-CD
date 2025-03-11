@@ -17,7 +17,7 @@ class Config:
     RATELIMIT_ENABLED = True
     RATELIMIT_STORAGE_URI = "memory://"
     RATELIMIT_STRATEGY = "moving-window"
-    RATELIMIT_DEFAULT = f"{RATE_LIMIT_REQUESTS_PER_MINUTE} per 60 seconds"
+    RATELIMIT_DEFAULT = f"{RATE_LIMIT_REQUESTS_PER_MINUTE} per {RATE_LIMIT_DEFAULT_RETRY} seconds"
     RATELIMIT_HEADERS_ENABLED = True
     
     # Version information
