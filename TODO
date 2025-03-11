@@ -2,4 +2,4 @@ Create an interaction between multiple branches (developer (already working) - a
 Work on the main branch
 Rebuild the Docker agent for the Jenkins pipeline to save compute resourcesù
 
-Build the request blocks for flask-app
+Work on Jenkins pipeline, automated debug and testing tools, gilab real-time feedback, multi-branch integration

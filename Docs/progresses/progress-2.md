@@ -6,8 +6,22 @@
 
 ### Created a more modular and scalable project structure for flask-app
 
-### created different type of env, custom via FLASK_ENV var by name values ("development", "production", "test")
+### Created different types of env, custom via FLASK_ENV var by name values ("development", "production", "testing")
 
-### created app specific tests for routes and rate limits (can be run with pytest)
+### Created app specific tests for routes and rate limits (can be run with pytest)
 
-### using blueprint for app routes
+### Using blueprint for app routes
+
+### Utilizing version.info file for flask-app version tag
+
+### Switched to global request rate limits (all addressed, all endpoints)
+
+### Using centralized and customizable values in config.py to update request rate limits and default retry time
+
+### Worked on bash script to test rate limits reliability
+
+### Updated Dockerfile for custom docker agent for Jenkins pipeline
+
+### Flask app is done! Next: Jenkins pipeline
+
+---
