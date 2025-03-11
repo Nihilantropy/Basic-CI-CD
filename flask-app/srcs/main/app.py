@@ -19,7 +19,7 @@ def create_app():
     
     # Load configuration
     app_config = get_config()
-    app.config.from_object(app_config.to_dict())
+    app.config.from_mapping(app_config.to_dict())
     
     # Configure logging
     logging.basicConfig(level=logging.DEBUG if app.config.get('DEBUG') else logging.INFO)
@@ -35,10 +35,46 @@ def create_app():
     @app.errorhandler(429)
     def ratelimit_handler(e):
         app.logger.warning(f"Rate limit exceeded: {request.remote_addr}")
+        
+        # Get rate limit information from the limit that was hit
+        # The retry-after header is set by Flask-Limiter
+        retry_after = None
+        if hasattr(e, 'description') and isinstance(e.description, dict):
+            retry_after = e.description.get('retry-after')
+        
+        # Default retry time if not available
+        if retry_after is None:
+            if 'Retry-After' in request.headers:
+                retry_after = request.headers.get('Retry-After')
+            else:
+                retry_after = 60  # default fallback
+        
+        # Create user-friendly message
+        if isinstance(retry_after, int) or retry_after.isdigit():
+            # If it's seconds
+            seconds = int(retry_after)
+            if seconds < 60:
+                time_msg = f"{seconds} second{'s' if seconds != 1 else ''}"
+            else:
+                minutes = seconds // 60
+                remaining_seconds = seconds % 60
+                time_msg = f"{minutes} minute{'s' if minutes != 1 else ''}"
+                if remaining_seconds > 0:
+                    time_msg += f" and {remaining_seconds} second{'s' if remaining_seconds != 1 else ''}"
+        else:
+            # If it's a timestamp or unparseable
+            time_msg = "some time"
+        
         return make_response(
-            jsonify(error="Rate limit exceeded. Please try again later.", 
-                   code=429), 
-            429
+            jsonify(
+                error="Rate limit exceeded.",
+                message=f"You have exceeded the allowed 100 requests per minute. Please try again in {time_msg}.",
+                retry_after=retry_after,
+                code=429
+            ), 
+            429,
+            # Set standard Retry-After header
+            {'Retry-After': str(retry_after)}
         )
     
     @app.route('/')
@@ -66,6 +102,6 @@ app = create_app()
 
 if __name__ == '__main__':
     # Print a message indicating that the app is starting
-    app.logger.debug("We are live!")
+    print("We are live!")
     app.logger.info("Flask application is starting...")
     app.run(host='0.0.0.0', port=5000)

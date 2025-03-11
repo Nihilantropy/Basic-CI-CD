@@ -22,7 +22,8 @@ class RateLimiterFactory:
             default_limits=["100 per minute"],
             storage_uri="memory://",
             strategy=app.config.get("RATELIMIT_STRATEGY", "fixed-window") if app else "fixed-window",
-            headers_enabled=app.config.get("RATELIMIT_HEADERS_ENABLED", True) if app else True
+            headers_enabled=True,
+            retry_after="http-date"  # This provides a timestamp for retry-after
         )
         
         # Configure custom error handler for rate limiting
