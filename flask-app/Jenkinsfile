@@ -15,8 +15,8 @@ pipeline {
         ARTIFACT_TYPE = "bin"
         ARTIFACT_PATH = "dist/app"
 
-		TELEGRAM_BOT_TOKEN = credentials("telegram-token") // change to a credential secret
-		TELEGRAM_CHAT_ID = credentials("telegram-chat-id") // change to a credential secret
+        TELEGRAM_BOT_TOKEN = credentials("telegram-token") // change to a credential secret
+        TELEGRAM_CHAT_ID = credentials("telegram-chat-id") // change to a credential secret
     }
 
     stages {
