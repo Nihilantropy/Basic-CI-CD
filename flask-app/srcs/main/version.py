@@ -45,5 +45,23 @@ class VersionManager:
         except Exception as e:
             self.logger.error(f"Error initializing version: {e}")
             raise
+    
+    def get_version(self):
+        """Return the application version.
+        
+        Returns:
+            str: The version string
+        """
+        global _version
+        return _version
 
-return _version
+
+# Function to access the version from outside this module
+def get_version():
+    """Get the application version.
+    
+    Returns:
+        str: The application version
+    """
+    global _version
+    return _version

@@ -4,7 +4,7 @@ import os
 import logging
 
 # Import the global version variable
-from .version import _version
+from .version import get_version
 
 # Create a blueprint for the routes
 main_blueprint = Blueprint('main', __name__)
@@ -17,8 +17,7 @@ def hello_world():
     time_now = datetime.now().strftime("%H:%M")
     
     # Use the global version variable
-    logger.debug(f"Version: {_version}")
-    version = _version if _version is not None else "unknown"
+    version = get_version() if get_version() is not None else "unknown"
     
     logger.debug(f"Handling / request, agent: {agent_name}, time: {time_now}, version: {version}")
     
