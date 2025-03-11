@@ -8,12 +8,17 @@ from .version import VersionManager
 from .errors import register_error_handlers
 from .routes import main_blueprint
 
+# Create a global limiter that will be initialized with the app
+limiter = None
+
 def create_app():
     """Application factory function.
     
     Returns:
         Flask: Configured Flask application
     """
+    global limiter
+    
     app = Flask(__name__)
     
     # Load configuration
@@ -29,8 +34,9 @@ def create_app():
     app.logger.debug(f"Using version file path from config: {version_file_path}")
     version_manager = VersionManager(version_file_path)
     
-    # Initialize rate limiter
+    # Initialize the global rate limiter
     limiter = RateLimiterFactory.create_limiter(app)
+    app.logger.debug("Global rate limiter initialized")
     
     # Register error handlers
     register_error_handlers(app)

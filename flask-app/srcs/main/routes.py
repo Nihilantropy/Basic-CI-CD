@@ -10,6 +10,9 @@ from .version import get_version
 main_blueprint = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
 
+# Note: We're not applying rate limits at the route level anymore
+# This allows the global application limits to work across all routes
+
 @main_blueprint.route('/')
 def hello_world():
     """Main endpoint that returns a greeting with agent name, version and time."""

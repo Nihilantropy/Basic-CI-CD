@@ -1,5 +1,7 @@
 from flask import jsonify, request, make_response
 import logging
+import time
+from datetime import datetime
 from .config import get_config
 
 # Get application configuration
@@ -12,6 +14,10 @@ RATE_LIMIT_MESSAGE = config.RATE_LIMIT_MESSAGE
 RATE_LIMIT_REQUESTS_PER_MINUTE = config.RATE_LIMIT_REQUESTS_PER_MINUTE
 
 logger = logging.getLogger(__name__)
+
+# Track when rate limits were hit (IP address -> timestamp)
+# This helps us implement a consistent 60-second window
+rate_limit_timestamps = {}
 
 def format_retry_time(retry_after):
     """Format retry time into a human-readable string.
@@ -39,42 +45,68 @@ def format_retry_time(retry_after):
         return "some time"
 
 def ratelimit_handler(e):
-    """Handle rate limiting errors.
+    """Handle rate limiting errors with a true 60-second window from first hit.
     
     Args:
         e: The exception that was raised
         
     Returns:
-        Response: A properly formatted error response
+        Response: A properly formatted error response with accurate time remaining
     """
-    logger.warning(f"Rate limit exceeded: {request.remote_addr}")
+    # Get client IP address
+    client_ip = request.remote_addr
+    current_time = int(time.time())
     
-    # Get rate limit information from the limit that was hit
-    retry_after = None
-    if hasattr(e, 'description') and isinstance(e.description, dict):
-        retry_after = e.description.get('retry-after')
+    # Log the rate limit event
+    logger.warning(f"Rate limit exceeded: {client_ip}")
     
-    # Default retry time if not available
-    if retry_after is None:
-        if 'Retry-After' in request.headers:
-            retry_after = request.headers.get('Retry-After')
-        else:
-            retry_after = RATE_LIMIT_DEFAULT_RETRY
+    # If this is the first time this client has hit the rate limit, store the timestamp
+    if client_ip not in rate_limit_timestamps:
+        rate_limit_timestamps[client_ip] = current_time
+        logger.debug(f"New rate limit for {client_ip} at timestamp {current_time}")
     
-    # Create user-friendly message
-    time_msg = format_retry_time(retry_after)
+    # Calculate how much time remains in the 60-second window
+    start_time = rate_limit_timestamps[client_ip]
+    elapsed_seconds = current_time - start_time
+    window_seconds = RATE_LIMIT_DEFAULT_RETRY  # The total window size in seconds
     
-    return make_response(
+    # Calculate remaining time in the window
+    retry_seconds = max(1, window_seconds - elapsed_seconds)
+    
+    logger.debug(f"Rate limit for {client_ip}: started at {start_time}, elapsed {elapsed_seconds}s, remaining {retry_seconds}s")
+    
+    # If the window has expired, this shouldn't happen but just in case
+    if retry_seconds <= 0:
+        # Reset the timestamp and allow the request
+        logger.debug(f"Window expired for {client_ip}, but still hitting handler. Resetting.")
+        rate_limit_timestamps.pop(client_ip, None)
+        retry_seconds = 1  # Minimal fallback
+    
+    # Format retry time for user-friendly message
+    time_msg = format_retry_time(retry_seconds)
+    
+    # Create and return the response
+    response = make_response(
         jsonify(
             error=RATE_LIMIT_MESSAGE,
-            message=f"You have exceeded the allowed {RATE_LIMIT_REQUESTS_PER_MINUTE} requests per minute. Please try again in {time_msg}.",
-            retry_after=retry_after,
+            message=f"You have exceeded the allowed {RATE_LIMIT_REQUESTS_PER_MINUTE} requests per 60 seconds. Please try again in {time_msg}.",
+            retry_after=retry_seconds,
             code=RATE_LIMIT_CODE
         ), 
-        RATE_LIMIT_CODE,
-        # Set standard Retry-After header
-        {'Retry-After': str(retry_after)}
+        RATE_LIMIT_CODE
     )
+    
+    # Ensure we set the Retry-After header ourselves
+    response.headers['Retry-After'] = str(retry_seconds)
+    
+    # Clean up old entries to prevent memory leaks
+    # Remove any entries older than 2 minutes
+    cleanup_time = current_time - (2 * RATE_LIMIT_DEFAULT_RETRY)
+    expired_ips = [ip for ip, timestamp in rate_limit_timestamps.items() if timestamp < cleanup_time]
+    for ip in expired_ips:
+        rate_limit_timestamps.pop(ip, None)
+    
+    return response
 
 def register_error_handlers(app):
     """Register all error handlers for the application.
