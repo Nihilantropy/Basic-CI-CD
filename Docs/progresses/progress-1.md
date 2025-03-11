@@ -1,7 +1,3 @@
-### What i learned
-
----
-
 ## **Day 1**
 
 #### **What is CI/CD**

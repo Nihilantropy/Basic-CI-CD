@@ -1,1 +1,5 @@
 Create an interaction between multiple branches (developer (already working) - and main (not working))
+Work on the main branch
+Rebuild the Docker agent for the Jenkins pipeline to save compute resourcesù
+
+Build the request blocks for flask-app

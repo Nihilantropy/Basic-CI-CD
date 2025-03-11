@@ -42,18 +42,12 @@
    - **First Endpoint**: A basic route (`/`) that returns a string including the current time. Example: `"Hello, my name is Flask, the time is xx:yy"`.
    - **Health Check Endpoint**: A simple `/health` route that responds with a 200 OK status for health monitoring.
 
-3. **Create Dockerfile**:
-   - Dockerize the Flask application by creating a `Dockerfile`.
-     - Install dependencies.
-     - Copy application code into the container.
-     - Expose necessary ports.
-
-4. **GitLab Repository**:
+3. **GitLab Repository**:
    - Create a GitLab repository named **"app-flask"**.
    - Push the Flask app code and Dockerfile to the GitLab repository.
    - Ensure the repository structure is clear and organized (e.g., `app.py`, `requirements.txt`, `Dockerfile`).
 
-5. **Documentation**:
+4. **Documentation**:
    - Write **README.md** to explain:
      - Flask application structure.
      - How to run the app locally.
@@ -78,11 +72,16 @@
      - Checkout the **app-flask** repository.
      - Build the Flask app with PyInstaller to generate a binary.
      - Upload the binary to Nexus (in a RAW repository).
+
+3. **Use docker agent**
+   - Define a Dockerfile at the repo root to:
+     - use a custom docker container for each stage of the pipeline
+     - ensure a secure and containerized environment
    
    Example Jenkinsfile:
    ```groovy
    pipeline {
-       agent any
+       agent docker
 
        environment {
            NEXUS_URL = "http://nexus:8081/repository/raw-repository/"
@@ -119,10 +118,10 @@
    }
    ```
 
-3. **Configure Webhook in GitLab**:
+34. **Configure Webhook in GitLab**:
    - Set up a webhook in GitLab to trigger the Jenkins job whenever changes are pushed to the **app-flask** repository.
 
-4. **Documentation**:
+5. **Documentation**:
    - Document the Jenkins pipeline configuration and the steps required to trigger it manually or automatically through GitLab.
    - Include troubleshooting tips if the pipeline fails to trigger or upload the artifact.
 
