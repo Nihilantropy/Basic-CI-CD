@@ -1,7 +1,6 @@
 import os
 from typing import Dict, Any
 
-
 class Config:
     """Base configuration for Flask application."""
     
@@ -10,10 +9,15 @@ class Config:
     TESTING = False
     
     # Rate limiting configuration
+    RATE_LIMIT_REQUESTS_PER_MINUTE = 100
+    RATE_LIMIT_CODE = 429
+    RATE_LIMIT_DEFAULT_RETRY = 60  # Default fallback retry time in seconds
+    RATE_LIMIT_MESSAGE = "Rate limit exceeded."
+    
     RATELIMIT_ENABLED = True
     RATELIMIT_STORAGE_URI = "memory://"
     RATELIMIT_STRATEGY = "fixed-window"
-    RATELIMIT_DEFAULT = "100 per minute"
+    RATELIMIT_DEFAULT = f"{RATE_LIMIT_REQUESTS_PER_MINUTE} per minute"
     RATELIMIT_HEADERS_ENABLED = True
     
     # Version information
