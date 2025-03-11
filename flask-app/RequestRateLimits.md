@@ -2,15 +2,21 @@
 
 ## Overview
 
-Our API implements rate limiting to ensure fair usage and system stability. This document explains how our rate limiting works, what to expect when limits are reached, and how to handle rate-limited responses in your applications.
+Our API implements a global rate limiting mechanism to ensure system stability and protect against DoS attacks. This document explains how our rate limiting works, what to expect when limits are reached, and how to handle rate-limited responses in your applications.
 
 ## Rate Limit Policy
 
 | Limit | Window | Scope |
 |-------|--------|-------|
-| 100 requests | 60 seconds (1 minute) | Global - shared across all endpoints |
+| 100 requests | 60 seconds (1 minute) | Global - shared across all endpoints and all clients |
 
-Rate limits are applied globally across all endpoints in the API. This means that the combined requests to any endpoints count toward the same rate limit.
+Unlike traditional IP-based rate limiting, our implementation uses a global counter that applies to the entire application. This means:
+
+- The limit of 100 requests per minute applies to the combined traffic from all clients
+- All endpoints (including `/` and `/health`) share the same counter
+- The rate limit does not differentiate between different IP addresses or user agents
+
+This approach is specifically designed to protect against distributed denial-of-service attacks where requests might come from multiple sources.
 
 ## Rate Limit Headers
 
@@ -21,15 +27,15 @@ Every API response includes the following rate limit headers:
 | `X-RateLimit-Limit` | Maximum number of requests allowed in the current window | `100` |
 | `X-RateLimit-Remaining` | Number of requests remaining in the current window | `42` |
 | `X-RateLimit-Reset` | Unix timestamp (in seconds) when the rate limit window resets | `1709301234` |
-| `Retry-After` | HTTP-formatted date or seconds until clients can retry | `Tue, 11 Mar 2025 13:30:45 GMT` |
+| `Retry-After` | Seconds until clients can retry (when rate limited) | `42` |
 
 ## Handling Rate Limited Requests
 
-When you exceed the rate limit, the API will:
+When the global rate limit is exceeded, the API will:
 
 1. Return a `429 Too Many Requests` HTTP status code
 2. Include all the rate limit headers mentioned above
-3. The `Retry-After` header will indicate when you can resume making requests
+3. Provide a JSON response with detailed information about the rate limit and retry time
 
 ### Example Rate Limited Response
 
@@ -39,20 +45,32 @@ Content-Type: application/json
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1709301234
-Retry-After: Tue, 11 Mar 2025 13:30:45 GMT
+Retry-After: 42
 
 {
-  "error": "Rate limit exceeded",
-  "message": "You have exceeded the rate limit of 100 requests per minute",
-  "retry_after": "47 seconds"
+  "code": 429,
+  "error": "Rate limit exceeded.",
+  "message": "The API has exceeded the allowed 100 requests per 60 seconds. Please try again in 42 seconds.",
+  "retry_after": 42
 }
 ```
+
+## Rate Limit Window Behavior
+
+Our rate limiting implementation uses a 60-second moving window that begins when the first rate-limited request occurs:
+
+1. When the application receives more than 100 requests within a minute, it starts returning 429 responses
+2. The timestamp of the first rate-limited request is recorded
+3. All subsequent requests receive a 429 response with an accurate `Retry-After` value based on the time remaining in the 60-second window
+4. After the 60-second window expires, the rate limit resets automatically
+
+This means that if the API experiences a burst of traffic at 12:00:00 that triggers rate limiting, normal service will resume at 12:01:00 regardless of whether requests continued during the rate-limited period.
 
 ## Best Practices for Handling Rate Limits
 
 ### 1. Monitor Rate Limit Headers
 
-Always check the `X-RateLimit-Remaining` header to know how many requests you have left in the current window.
+Always check the `X-RateLimit-Remaining` header to know how many requests are left in the current window.
 
 ```python
 response = requests.get('https://api.example.com/resource')
@@ -67,45 +85,39 @@ When you receive a 429 response, use the `Retry-After` header to determine when 
 ```python
 response = requests.get('https://api.example.com/resource')
 if response.status_code == 429:
-    retry_after = response.headers.get('Retry-After')
-    # If Retry-After is a timestamp
-    if retry_after and retry_after.startswith(('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')):
-        # Parse HTTP date and calculate seconds to wait
-        retry_date = parsedate_to_datetime(retry_after)
-        wait_time = (retry_date - datetime.now()).total_seconds()
-    else:
-        # If Retry-After is seconds
-        wait_time = int(retry_after)
-    
-    print(f"Rate limited. Waiting {wait_time} seconds before retrying.")
-    time.sleep(wait_time)
+    retry_after = int(response.headers.get('Retry-After', 60))
+    print(f"Rate limited. Waiting {retry_after} seconds before retrying.")
+    time.sleep(retry_after)
     # Retry the request after waiting
 ```
 
 ### 3. Distribute Requests
 
-Distribute your requests evenly over time rather than sending them in bursts.
+Since our rate limit is global across all users, consider:
+- Adding delays between your requests
+- Implementing client-side throttling
+- Batching operations where possible to reduce the total number of requests
 
-### 4. Optimize API Usage
+### 4. Use the Health Endpoint Sparingly
 
-Minimize unnecessary API calls by:
-- Caching responses when appropriate
-- Batching operations when possible
-- Using bulk endpoints where available
+Remember that calls to `/health` count toward the same global rate limit as your main endpoint calls. In high-traffic scenarios, consider reducing the frequency of health checks.
 
 ## Frequently Asked Questions
 
 **Q: Does the rate limit apply to all endpoints?**  
-A: Yes, our rate limit is global and applies across all endpoints.
+A: Yes, our rate limit is global and applies across all endpoints, including the health check endpoint.
 
 **Q: What happens if I exceed the rate limit?**  
-A: You'll receive a 429 status code and will need to wait until the rate limit resets before making additional requests.
+A: You'll receive a 429 status code and will need to wait until the rate limit window resets (60 seconds from when rate limiting began).
 
 **Q: How do I know when I can retry after being rate limited?**  
-A: Check the `Retry-After` header or the `X-RateLimit-Reset` header in the response.
+A: Check the `Retry-After` header in the response. This will tell you exactly how many seconds to wait.
 
 **Q: Do failed requests count toward the rate limit?**  
-A: Yes, all requests, regardless of their success or failure, count toward your rate limit.
+A: Yes, all requests, regardless of their success or failure, count toward the global rate limit.
 
-**Q: Is there a way to increase my rate limit?**  
-A: [Include information about any premium tiers or special access options if applicable]
+**Q: Why use a global rate limit instead of per-IP limiting?**  
+A: A global rate limit provides better protection against distributed denial-of-service attacks where requests might come from multiple sources. It ensures the application remains stable under any traffic pattern.
+
+**Q: Is there a way to increase the rate limit?**  
+A: The rate limit is configured in the application's settings. For production deployments, this can be adjusted based on the specific requirements and the capacity of your infrastructure.
