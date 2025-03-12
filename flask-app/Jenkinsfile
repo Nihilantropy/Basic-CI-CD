@@ -8,6 +8,22 @@ pipeline {
         }
     }
 
+    parameters {
+        // Core execution controls - these will only be used for manual builds
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
+        booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
+        booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
+        booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
+        booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
+        booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
+        booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
+        booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
+        
+        // Integration controls
+        booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
+        booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
+    }
+
     environment {
         // Nexus configuration
         NEXUS_VERSION = "nexus3"
@@ -29,243 +45,269 @@ pipeline {
     }
 
     stages {
+        stage('Load Configuration') {
+            steps {
+                script {
+                    echo "Loading configuration from jenkins-config.yml if available..."
+                    
+                    // Initialize global variables for stage control
+                    env.DO_RUN_TESTS = params.RUN_TESTS.toString()
+                    env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
+                    env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
+                    env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
+                    env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
+                    env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
+                    env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
+                    env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
+                    env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
+                    env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
+                    
+                    // Try to load the configuration file
+                    try {
+                        if (fileExists('jenkins-config.yml')) {
+                            echo "Found jenkins-config.yml file, loading configuration..."
+                            def config = readYaml(file: 'jenkins-config.yml')
+                            echo "Config loaded: ${config}"
+                            
+                            // Override global variables with values from config file
+                            if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
+                            if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
+                            if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
+                            if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
+                            if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
+                            if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
+                            if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
+                            if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
+                            if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
+                            if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
+                            
+                            echo "Configuration values set from config file"
+                        } else {
+                            echo "No jenkins-config.yml file found, using parameter values"
+                        }
+                    } catch (Exception e) {
+                        echo "Error loading config file: ${e.getMessage()}"
+                        echo "Using parameter values instead"
+                    }
+                }
+            }
+        }
+        
         stage('Pipeline Start') {
             steps {
                 script {
-                    updateGitlabCommitStatus name: 'pipeline', state: 'running'
-                    sendTelegramMessage("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
+                    // Update GitLab status if enabled
+                    updateGitLabStatus('pipeline', 'running')
+                    
+                    // Send notification
+                    notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
+                    
+                    // Print selected stages for clarity
+                    echo "Running with the following configuration:"
+                    echo "Tests: ${DO_RUN_TESTS}"
+                    echo "Ruff Check: ${DO_RUN_RUFF_CHECK}"
+                    echo "Bandit Check: ${DO_RUN_BANDIT_CHECK}"
+                    echo "Update Version: ${DO_UPDATE_VERSION}"
+                    echo "Build Executable: ${DO_BUILD_EXECUTABLE}"
+                    echo "Archive Executable: ${DO_ARCHIVE_EXECUTABLE}"
+                    echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
+                    echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
+                    echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
+                    echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
                 }
             }
         }
         
         stage('Run Tests') {
+            when {
+                expression { 
+                    return env.DO_RUN_TESTS == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'tests', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Running tests with pytest... 🧪")
-                        sh 'python -m pytest srcs/tests --maxfail=1 --disable-warnings -v'
-                        updateGitlabCommitStatus name: 'tests', state: 'success'
-                        sendTelegramMessage("Jenkins: Tests passed successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'tests', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Tests failed ❌\nError: ${errorLog}")
-                        error "Pytest tests failed. Pipeline interrupted."
-                    }
+                runStage('tests', 'Running tests with pytest... 🧪') {
+                    sh '''
+                    . /app/venv/bin/activate
+                    python -m pytest srcs/tests --maxfail=1 --disable-warnings -v
+                    '''
                 }
             }
         }
 
         stage('Code Quality Check - Ruff') {
+            when {
+                expression { 
+                    return env.DO_RUN_RUFF_CHECK == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'ruff-check', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Running Ruff code quality check... 🔍")
-                        sh 'python -m ruff check . --select all'
-                        updateGitlabCommitStatus name: 'ruff-check', state: 'success'
-                        sendTelegramMessage("Jenkins: Ruff check passed successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'ruff-check', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Ruff check failed - code quality issues found ❌\nError: ${errorLog}")
-                        error "Ruff found code quality issues. Pipeline interrupted."
-                    }
+                runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
+                    sh '''
+                    . /app/venv/bin/activate
+                    python -m ruff check . --select all
+                    '''
                 }
             }
         }
 
         stage('Security Check - Bandit') {
+            when {
+                expression { 
+                    return env.DO_RUN_BANDIT_CHECK == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'bandit', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Running Bandit security check... 🔒")
-                        sh 'python -m bandit -r . -ll -iii'
-                        updateGitlabCommitStatus name: 'bandit', state: 'success'
-                        sendTelegramMessage("Jenkins: Bandit security check passed successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'bandit', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Bandit security check failed - security issues found ❌\nError: ${errorLog}")
-                        error "Bandit found security issues with medium or high severity. Pipeline interrupted."
-                    }
+                runStage('bandit', 'Running Bandit security check... 🔒') {
+                    sh '''
+                    . /app/venv/bin/activate
+                    python -m bandit -r . -ll -iii
+                    '''
                 }
             }
         }
 
         stage('Update Version Information') {
+            when {
+                expression { 
+                    return env.DO_UPDATE_VERSION == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'version-update', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Updating version information... 📝")
-                        
-                        // Update version.py with the timestamp
-                        sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
-                        
-                        // Verify version.py was updated correctly
-                        sh "cat srcs/main/version.py"
-                        
-                        // Also update version.info file to keep it in sync
-                        sh "echo ${env.TIMESTAMP} > version.info"
-                        
-                        updateGitlabCommitStatus name: 'version-update', state: 'success'
-                        sendTelegramMessage("Jenkins: Version information updated to ${env.TIMESTAMP} successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'version-update', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to update version information ❌\nError: ${errorLog}")
-                        error "Version update failed. Pipeline interrupted."
-                    }
+                runStage('version-update', 'Updating version information... 📝') {
+                    // Update version.py with the timestamp
+                    sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
+                    
+                    // Verify version.py was updated correctly
+                    sh "cat srcs/main/version.py"
+                    
+                    // Also update version.info file to keep it in sync
+                    sh "echo ${env.TIMESTAMP} > version.info"
                 }
             }
         }
 
         stage('Build Executable') {
+            when {
+                expression { 
+                    return env.DO_BUILD_EXECUTABLE == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'build', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Building executable using PyInstaller... 🔧")
-                        sh 'python -m pyinstaller --onefile srcs/main/app.py --name flask-app'
-                        updateGitlabCommitStatus name: 'build', state: 'success'
-                        sendTelegramMessage("Jenkins: Executable built successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'build', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to build executable ❌\nError: ${errorLog}")
-                        error "PyInstaller build failed. Pipeline interrupted."
-                    }
+                runStage('build', 'Building executable using PyInstaller... 🔧') {
+                    // Check if PyInstaller is installed and accessible
+                    sh '''
+                    . /app/venv/bin/activate
+                    python -c "import PyInstaller; print(f'PyInstaller is installed at: {PyInstaller.__file__}')"
+                    '''
+                    
+                    // Run PyInstaller directly using the binary instead of the module
+                    sh '''
+                    . /app/venv/bin/activate
+                    /app/venv/bin/pyinstaller --onefile srcs/main/app.py --name flask-app
+                    '''
                 }
             }
         }
 
         stage('Archive Executable') {
+            when {
+                expression {
+                    return env.DO_ARCHIVE_EXECUTABLE == 'true' && env.DO_BUILD_EXECUTABLE == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'archive', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Archiving the built executable... 📦")
-                        archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
-                        updateGitlabCommitStatus name: 'archive', state: 'success'
-                        sendTelegramMessage("Jenkins: Executable archived successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'archive', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to archive executable ❌\nError: ${errorLog}")
-                        error "Archive failed. Pipeline interrupted."
-                    }
+                runStage('archive', 'Archiving the built executable... 📦') {
+                    archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
                 }
             }
         }
 
         stage('Upload to Nexus') {
+            when {
+                expression { 
+                    return env.DO_UPLOAD_TO_NEXUS == 'true' && env.DO_BUILD_EXECUTABLE == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'nexus-upload', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Uploading artifacts to Nexus... 🚀")
-                        
-                        // Upload with "latest" tag
-                        nexusArtifactUploader(
-                            nexusVersion: env.NEXUS_VERSION,
-                            protocol: env.NEXUS_PROTOCOL,
-                            nexusUrl: env.NEXUS_URL,
-                            groupId: env.GROUP_ID,
-                            version: 'latest',
-                            repository: env.NEXUS_REPO,
-                            credentialsId: env.NEXUS_CREDENTIALS_ID,
-                            artifacts: [
-                                [
-                                    artifactId: env.ARTIFACT_ID,
-                                    type: 'bin',
-                                    file: 'dist/flask-app',
-                                    classifier: ''
-                                ]
+                runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀') {
+                    // Upload with "latest" tag
+                    nexusArtifactUploader(
+                        nexusVersion: env.NEXUS_VERSION,
+                        protocol: env.NEXUS_PROTOCOL,
+                        nexusUrl: env.NEXUS_URL,
+                        groupId: env.GROUP_ID,
+                        version: 'latest',
+                        repository: env.NEXUS_REPO,
+                        credentialsId: env.NEXUS_CREDENTIALS_ID,
+                        artifacts: [
+                            [
+                                artifactId: env.ARTIFACT_ID,
+                                type: 'bin',
+                                file: 'dist/flask-app',
+                                classifier: ''
                             ]
-                        )
-                        
-                        // Upload with timestamp tag
-                        nexusArtifactUploader(
-                            nexusVersion: env.NEXUS_VERSION,
-                            protocol: env.NEXUS_PROTOCOL,
-                            nexusUrl: env.NEXUS_URL,
-                            groupId: env.GROUP_ID,
-                            version: env.TIMESTAMP,
-                            repository: env.NEXUS_REPO,
-                            credentialsId: env.NEXUS_CREDENTIALS_ID,
-                            artifacts: [
-                                [
-                                    artifactId: env.ARTIFACT_ID,
-                                    type: 'bin',
-                                    file: 'dist/flask-app',
-                                    classifier: ''
-                                ]
+                        ]
+                    )
+                    
+                    // Upload with timestamp tag
+                    nexusArtifactUploader(
+                        nexusVersion: env.NEXUS_VERSION,
+                        protocol: env.NEXUS_PROTOCOL,
+                        nexusUrl: env.NEXUS_URL,
+                        groupId: env.GROUP_ID,
+                        version: env.TIMESTAMP,
+                        repository: env.NEXUS_REPO,
+                        credentialsId: env.NEXUS_CREDENTIALS_ID,
+                        artifacts: [
+                            [
+                                artifactId: env.ARTIFACT_ID,
+                                type: 'bin',
+                                file: 'dist/flask-app',
+                                classifier: ''
                             ]
-                        )
-                        
-                        updateGitlabCommitStatus name: 'nexus-upload', state: 'success'
-                        sendTelegramMessage("Jenkins: Successfully uploaded to Nexus ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'nexus-upload', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to upload to Nexus ❌\nError: ${errorLog}")
-                        error "Nexus upload failed. Pipeline interrupted."
-                    }
+                        ]
+                    )
                 }
             }
         }
 
         stage('Push Changes & Create Tag') {
+            when {
+                expression { 
+                    return env.DO_PUSH_GIT_CHANGES == 'true' && env.DO_UPDATE_VERSION == 'true' 
+                }
+            }
             steps {
-                script {
-                    updateGitlabCommitStatus name: 'git-push', state: 'running'
-                    try {
-                        sendTelegramMessage("Jenkins: Pushing version updates to repository... 📤")
+                runStage('git-push', 'Pushing version updates to repository... 📤') {
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
+                                                     usernameVariable: 'GIT_USERNAME', 
+                                                     passwordVariable: 'GIT_PASSWORD')]) {
+                        // Print diagnostic information
+                        sh "echo 'Current directory: ' && pwd"
+                        sh "ls -la"
                         
-                        withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
-                                                         usernameVariable: 'GIT_USERNAME', 
-                                                         passwordVariable: 'GIT_PASSWORD')]) {
-                            // Print diagnostic information
-                            sh "echo 'Current directory: ' && pwd"
-                            sh "ls -la"
-                            
-                            // Configure Git globally
-                            sh "git config --global user.email 'jenkins@example.com'"
-                            sh "git config --global user.name 'Jenkins CI'"
-                            
-                            // Print git status for debugging
-                            sh "git status"
-                            
-                            // Add, commit, and push version-related changes
-                            sh "git add version.info srcs/main/version.py"
-                            sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
-                            
-                            // Set the repository URL with credentials
+                        // Configure Git globally
+                        sh "git config --global user.email 'jenkins@example.com'"
+                        sh "git config --global user.name 'Jenkins CI'"
+                        
+                        // Print git status for debugging
+                        sh "git status"
+                        
+                        // Add, commit, and push version-related changes
+                        sh "git add version.info srcs/main/version.py"
+                        sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
+                        
+                        script {
                             def gitRepoUrl = "http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab/pipeline-project-group/app-flask.git"
                             
-                            // Push changes to the current branch (developer branch)
+                            // Commands that use gitRepoUrl
                             sh "git push ${gitRepoUrl} HEAD:developer"
-                            
-                            // Verify the version files were pushed correctly
-                            sendTelegramMessage("Jenkins: Version files successfully pushed to repository")
-                            
-                            // Create and push tag
                             sh "git tag -a ${env.TIMESTAMP} -m 'Release ${env.TIMESTAMP}'"
                             sh "git push ${gitRepoUrl} ${env.TIMESTAMP}"
-                            
-                            sendTelegramMessage("Jenkins: Tag ${env.TIMESTAMP} created and pushed")
                         }
                         
-                        updateGitlabCommitStatus name: 'git-push', state: 'success'
-                        sendTelegramMessage("Jenkins: Changes pushed and tag created successfully ✅")
-                    } catch (Exception e) {
-                        updateGitlabCommitStatus name: 'git-push', state: 'failed'
-                        def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to push changes or create tag ❌\nError: ${errorLog}")
-                        error "Git operations failed. Pipeline interrupted."
+                        // Notify about successful tag creation
+                        notify("Jenkins: Tag ${env.TIMESTAMP} created and pushed")
                     }
                 }
             }
@@ -275,24 +317,55 @@ pipeline {
     post {
         success {
             script {
-                updateGitlabCommitStatus name: 'pipeline', state: 'success'
-                sendTelegramMessage("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.")
+                updateGitLabStatus('pipeline', 'success')
+                notify("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.")
             }
         }
         failure {
             script {
-                updateGitlabCommitStatus name: 'pipeline', state: 'failed'
-                sendTelegramMessage("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.")
-            }
-        }
-        always {
-            script {
-                sendTelegramMessage("📊 Pipeline completed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Total duration: ${currentBuild.durationString}")
+                updateGitLabStatus('pipeline', 'failed')
+                notify("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.")
             }
         }
     }
 }
 
+// Helper function to update GitLab status
+def updateGitLabStatus(String name, String state) {
+    if (env.DO_ENABLE_GITLAB_STATUS == 'true') {
+        updateGitlabCommitStatus name: name, state: state
+    } else {
+        echo "GitLab status updates disabled. Would have set ${name} to ${state}."
+    }
+}
+
+// Helper function to send notifications
+def notify(String message) {
+    echo message
+    if (env.DO_ENABLE_TELEGRAM == 'true') {
+        sendTelegramMessage(message)
+    } else {
+        echo "Telegram notifications disabled. Would have sent: ${message}"
+    }
+}
+
+// Helper function to execute a stage with proper error handling
+def runStage(String stageName, String notificationMessage, Closure stageBody) {
+    updateGitLabStatus(stageName, 'running')
+    try {
+        notify("Jenkins: ${notificationMessage}")
+        stageBody()
+        updateGitLabStatus(stageName, 'success')
+        notify("Jenkins: ${stageName} completed successfully ✅")
+    } catch (Exception e) {
+        updateGitLabStatus(stageName, 'failed')
+        def errorLog = e.getMessage()
+        notify("Jenkins: ${stageName} failed ❌\nError: ${errorLog}")
+        error "${stageName} failed. Pipeline interrupted."
+    }
+}
+
+// Send message to Telegram
 def sendTelegramMessage(String message) {
     // URL encode the message
     def encodedMessage = URLEncoder.encode(message, "UTF-8")

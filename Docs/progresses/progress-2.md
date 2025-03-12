@@ -35,4 +35,8 @@
     2. added bandit stage
     3. instert gilab stage post request for instant feedback
     4. added version.info changes directly to the gitlab repo from the Jenkinsfile stage
+    5. added parameters to have controlled pipeline testing stages using jenkins-config.yml file
+    6. switched to more modular Jenkinsfile, with reusable functions for all stages
+
+### testing pipeline using controlled stages version, binary upload on nexus and gitlab push changes on version.info file
     

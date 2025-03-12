@@ -1,0 +1,27 @@
+# Jenkins Pipeline Configuration
+# This file controls how your CI/CD pipeline runs when triggered automatically
+
+# Stage execution controls
+runTests: true
+runRuffCheck: true
+runBanditCheck: true
+updateVersion: true
+buildExecutable: true
+archiveExecutable: true
+uploadToNexus: true
+pushGitChanges: true
+
+# Integration controls
+enableGitlabStatus: true
+enableTelegram: true
+
+# You can add branch-specific configurations in the future
+# branches:
+#   developer:
+#     runTests: true
+#     enableTelegram: false
+#   main:
+#     runTests: true
+#     runRuffCheck: true
+#     runBanditCheck: true
+#     enableTelegram: true
