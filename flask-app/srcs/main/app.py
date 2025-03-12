@@ -4,7 +4,6 @@ import logging
 # Import our custom modules
 from .config import get_config
 from .limiter import RateLimiterFactory
-from .version import VersionManager
 from .errors import register_error_handlers
 from .routes import main_blueprint
 
@@ -29,11 +28,6 @@ def create_app():
     logging.basicConfig(level=logging.DEBUG if app.config.get('DEBUG') else logging.INFO)
     app.logger.info("Starting Flask application...")
     
-    # Initialize version manager
-    version_file_path = app.config.get('VERSION_FILE_PATH', 'version.info')
-    app.logger.debug(f"Using version file path from config: {version_file_path}")
-    version_manager = VersionManager(version_file_path)
-    
     # Initialize the global rate limiter
     limiter = RateLimiterFactory.create_limiter(app)
     app.logger.debug("Global rate limiter initialized")
@@ -52,6 +46,5 @@ app = create_app()
 
 if __name__ == '__main__':
     # Print a message indicating that the app is starting
-    print("We are live!")
     app.logger.info("Flask application is starting...")
     app.run(host='0.0.0.0', port=5000)

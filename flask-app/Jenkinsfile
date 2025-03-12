@@ -95,24 +95,29 @@ pipeline {
             }
         }
 
-        stage('Update Version File') {
+        stage('Update Version Information') {
             steps {
                 script {
                     updateGitlabCommitStatus name: 'version-update', state: 'running'
                     try {
-                        sendTelegramMessage("Jenkins: Updating version.info file... 📝")
+                        sendTelegramMessage("Jenkins: Updating version information... 📝")
                         
-                        sh "echo ${env.TIMESTAMP} > flask-app/version.info"
+                        // Update version.py with the timestamp
+                        sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
                         
-                        sh "cat flask-app/version.info"
+                        // Verify version.py was updated correctly
+                        sh "cat srcs/main/version.py"
+                        
+                        // Also update version.info file to keep it in sync
+                        sh "echo ${env.TIMESTAMP} > version.info"
                         
                         updateGitlabCommitStatus name: 'version-update', state: 'success'
-                        sendTelegramMessage("Jenkins: Version.info updated to ${env.TIMESTAMP} successfully ✅")
+                        sendTelegramMessage("Jenkins: Version information updated to ${env.TIMESTAMP} successfully ✅")
                     } catch (Exception e) {
                         updateGitlabCommitStatus name: 'version-update', state: 'failed'
                         def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to update version.info ❌\nError: ${errorLog}")
-                        error "Version file update failed. Pipeline interrupted."
+                        sendTelegramMessage("Jenkins: Failed to update version information ❌\nError: ${errorLog}")
+                        error "Version update failed. Pipeline interrupted."
                     }
                 }
             }
@@ -143,7 +148,7 @@ pipeline {
                     updateGitlabCommitStatus name: 'archive', state: 'running'
                     try {
                         sendTelegramMessage("Jenkins: Archiving the built executable... 📦")
-                        archiveArtifacts artifacts: 'flask-app/dist/flask-app', fingerprint: true
+                        archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
                         updateGitlabCommitStatus name: 'archive', state: 'success'
                         sendTelegramMessage("Jenkins: Executable archived successfully ✅")
                     } catch (Exception e) {
@@ -176,7 +181,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'flask-app/dist/flask-app',
+                                    file: 'dist/flask-app',
                                     classifier: ''
                                 ]
                             ]
@@ -195,7 +200,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'flask-app/dist/flask-app',
+                                    file: 'dist/flask-app',
                                     classifier: ''
                                 ]
                             ]
@@ -218,7 +223,7 @@ pipeline {
                 script {
                     updateGitlabCommitStatus name: 'git-push', state: 'running'
                     try {
-                        sendTelegramMessage("Jenkins: Pushing version update to repository... 📤")
+                        sendTelegramMessage("Jenkins: Pushing version updates to repository... 📤")
                         
                         withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
                                                          usernameVariable: 'GIT_USERNAME', 
@@ -234,18 +239,18 @@ pipeline {
                             // Print git status for debugging
                             sh "git status"
                             
-                            // Add, commit, and push version.info changes
-                            sh "git add version.info"
-                            sh "git commit -m 'Update version.info to ${env.TIMESTAMP} [ci skip]'"
+                            // Add, commit, and push version-related changes
+                            sh "git add version.info srcs/main/version.py"
+                            sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
                             
                             // Set the repository URL with credentials
-                            def gitRepoUrl = "https://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab.local:8080/pipeline-project/app-flask.git"
+                            def gitRepoUrl = "http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab/pipeline-project-group/app-flask.git"
                             
-                            // Push changes to the current branch
-                            sh "git push ${gitRepoUrl} HEAD:${env.BRANCH_NAME}"
+                            // Push changes to the current branch (developer branch)
+                            sh "git push ${gitRepoUrl} HEAD:developer"
                             
-                            // Verify the version file was pushed correctly
-                            sendTelegramMessage("Jenkins: Version.info successfully pushed to repository")
+                            // Verify the version files were pushed correctly
+                            sendTelegramMessage("Jenkins: Version files successfully pushed to repository")
                             
                             // Create and push tag
                             sh "git tag -a ${env.TIMESTAMP} -m 'Release ${env.TIMESTAMP}'"
