@@ -39,4 +39,8 @@
     6. switched to more modular Jenkinsfile, with reusable functions for all stages
 
 ### testing pipeline using controlled stages version, binary upload on nexus and gitlab push changes on version.info file
+
+### Pipeline live update on the gitlab repo working!
+
+## NEXT: working on the Jenkinsfile -> Gitlab push
     

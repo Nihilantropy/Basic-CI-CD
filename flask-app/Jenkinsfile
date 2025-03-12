@@ -8,6 +8,11 @@ pipeline {
         }
     }
 
+    options {
+        // Reference the GitLab connection name you created in Jenkins
+        gitLabConnection('gitlab-local')  // Use the name you specified in Jenkins config
+    }
+
     parameters {
         // Core execution controls - these will only be used for manual builds
         booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
@@ -35,7 +40,7 @@ pipeline {
         ARTIFACT_ID = "flask-app"
         
         // Git configuration for pushing changes
-        GIT_CREDENTIALS_ID = credentials("gitlab-credentials")
+        GIT_CREDENTIALS_ID = "gitlab-credentials"
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
@@ -194,12 +199,6 @@ pipeline {
             }
             steps {
                 runStage('build', 'Building executable using PyInstaller... 🔧') {
-                    // Check if PyInstaller is installed and accessible
-                    sh '''
-                    . /app/venv/bin/activate
-                    python -c "import PyInstaller; print(f'PyInstaller is installed at: {PyInstaller.__file__}')"
-                    '''
-                    
                     // Run PyInstaller directly using the binary instead of the module
                     sh '''
                     . /app/venv/bin/activate
@@ -286,9 +285,9 @@ pipeline {
                         sh "echo 'Current directory: ' && pwd"
                         sh "ls -la"
                         
-                        // Configure Git globally
-                        sh "git config --global user.email 'jenkins@example.com'"
-                        sh "git config --global user.name 'Jenkins CI'"
+                        // Configure Git 
+                        sh "git config user.email 'claudio0017.work@gmail.com'"
+                        sh "git config user.name 'crea'"
                         
                         // Print git status for debugging
                         sh "git status"
@@ -298,7 +297,7 @@ pipeline {
                         sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
                         
                         script {
-                            def gitRepoUrl = "http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab/pipeline-project-group/app-flask.git"
+                            def gitRepoUrl = "http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab.local/pipeline-project-group/app-flask.git"
                             
                             // Commands that use gitRepoUrl
                             sh "git push ${gitRepoUrl} HEAD:developer"
@@ -360,7 +359,7 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
     } catch (Exception e) {
         updateGitLabStatus(stageName, 'failed')
         def errorLog = e.getMessage()
-        notify("Jenkins: ${stageName} failed ❌\nError: ${errorLog}")
+        notify("Jenkins: ${stageName} failed ❌\n")
         error "${stageName} failed. Pipeline interrupted."
     }
 }
