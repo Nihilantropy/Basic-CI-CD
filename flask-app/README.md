@@ -245,13 +245,26 @@ Tests are run using pytest and are integrated into the CI/CD pipeline:
 pytest srcs/tests --maxfail=1 --disable-warnings -q
 ```
 
-### Rate Limit Test Script
+### Other tests
 
-A bash script (`curl_test.sh`) is provided to test rate limiting behavior in a deployed environment. It makes multiple requests and reports on rate limit behavior.
+Other test can be performed using tools like *Gatling Open Source* or customized bash script that simulate DoS attacks 
 
-## Containerization
+### Building and Running
 
-The application is containerized for deployment in a Kubernetes environment.
+In the CI/CD pipeline, PyInstaller packages the application as a standalone binary, which is then uploaded to Nexus and deployed to Kubernetes using a Helm chart.
+
+## CI/CD Integration
+
+The application integrates with a CI/CD pipeline defined in the `Jenkinsfile`.
+
+### Pipeline Stages
+
+1. **Build Docker Agent**: Setup a custom docker agent from a Dockerfile (inside agent folder)
+2. **Install Dependencies**: Sets up the Python environment
+3. **Run Tests**: Executes the test suite
+4. **Build Executable**: Uses PyInstaller to create a standalone binary
+5. **Archive Executable**: Stores the binary as a Jenkins artifact
+6. **Upload to Nexus**: Uploads the binary to a Nexus repository for deployment
 
 ### Dockerfile
 
@@ -267,22 +280,6 @@ RUN pip install --no-cache-dir -r srcs/requirements.txt && \
 
 WORKDIR /usr/src/app
 ```
-
-### Building and Running
-
-In the CI/CD pipeline, PyInstaller packages the application as a standalone binary, which is then uploaded to Nexus and deployed to Kubernetes using a Helm chart.
-
-## CI/CD Integration
-
-The application integrates with a CI/CD pipeline defined in the `Jenkinsfile`.
-
-### Pipeline Stages
-
-1. **Install Dependencies**: Sets up the Python environment
-2. **Run Tests**: Executes the test suite
-3. **Build Executable**: Uses PyInstaller to create a standalone binary
-4. **Archive Executable**: Stores the binary as a Jenkins artifact
-5. **Upload to Nexus**: Uploads the binary to a Nexus repository for deployment
 
 ### Kubernetes Deployment
 

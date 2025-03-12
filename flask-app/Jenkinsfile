@@ -1,7 +1,11 @@
 pipeline {
 
 	/* use a custom Dockerfile to setup the agent */
-    agent { dockerfile true }
+    agent {
+        dockerfile {
+            filename 'agent/Dockerfile'
+        }
+    }
 
     environment {
         NEXUS_VERSION = "nexus3"

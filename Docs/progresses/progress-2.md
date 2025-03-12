@@ -25,3 +25,9 @@
 ### Flask app is done! Next: Jenkins pipeline
 
 ---
+
+# Day 2
+
+### Find a tool to perform simulate DOS attack in order to test flask-app rate limit (Using Gatling Open Source)
+
+### 
