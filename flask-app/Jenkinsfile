@@ -36,26 +36,6 @@ pipeline {
                 }
             }
         }
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    try {
-                        sendTelegramMessage("Jenkins: Installing dependencies started... 🔄")
-                        sh '''
-                            python -m venv venv
-                            . venv/bin/activate
-                            pip install --no-cache-dir -r srcs/requirements.txt
-                            pip install pytest pyinstaller requests
-                        '''
-                        sendTelegramMessage("Jenkins: Dependencies installed successfully ✅")
-                    } catch (Exception e) {
-						def errorLog = e.getMessage()
-                        sendTelegramMessage("Jenkins: Failed to install dependencies ❌\nError: ${errorLog}")
-                        throw e  // Re-throw to fail the stage
-                    }
-                }
-            }
-        }
 
         stage('Run Tests') {
             steps {
@@ -71,6 +51,44 @@ pipeline {
 						def errorLog = e.getMessage()
                         sendTelegramMessage("Jenkins: Tests failed ❌\nError: ${errorLog}")
                         throw e  // Re-throw to fail the stage
+                    }
+                }
+            }
+        }
+
+        stage('Bug Checking - Ruff') {
+            steps {
+                script {
+                    try {
+                        sendTelegramMessage("Jenkins: Running Ruff code quality check... 🔍")
+                        sh '''
+                            . venv/bin/activate
+                            ruff check . --select all
+                        '''
+                        sendTelegramMessage("Jenkins: Ruff check passed successfully ✅")
+                    } catch (Exception e) {
+                        def errorLog = e.getMessage()
+                        sendTelegramMessage("Jenkins: Ruff check failed - code quality issues found ❌\nError: ${errorLog}")
+                        error "Ruff found code quality issues. Pipeline interrupted."
+                    }
+                }
+            }
+        }
+
+        stage('Security Check - Bandit') {
+            steps {
+                script {
+                    try {
+                        sendTelegramMessage("Jenkins: Running Bandit security check... 🔒")
+                        sh '''
+                            . venv/bin/activate
+                            bandit -r . -ll -iii
+                        '''
+                        sendTelegramMessage("Jenkins: Bandit security check passed successfully ✅")
+                    } catch (Exception e) {
+                        def errorLog = e.getMessage()
+                        sendTelegramMessage("Jenkins: Bandit security check failed - security issues found ❌\nError: ${errorLog}")
+                        error "Bandit found security issues with medium or high severity. Pipeline interrupted."
                     }
                 }
             }

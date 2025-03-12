@@ -7,6 +7,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir -r srcs/requirements.txt && \
-    pip install pytest pyinstaller requests
+    pip install pytest pyinstaller requests ruff bandit
 # Set the working directory
 WORKDIR /usr/src/app

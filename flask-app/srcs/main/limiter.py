@@ -9,7 +9,6 @@ config = get_config()
 
 # Define a global key function that returns the same value for all requests
 def global_key_func():
-    """Return a static key for all requests to create a truly global rate limit."""
     return "global"
 
 class RateLimiterFactory:
