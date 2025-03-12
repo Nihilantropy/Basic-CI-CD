@@ -20,9 +20,6 @@ class Config:
     RATELIMIT_DEFAULT = f"{RATE_LIMIT_REQUESTS_PER_MINUTE} per {RATE_LIMIT_DEFAULT_RETRY} seconds"
     RATELIMIT_HEADERS_ENABLED = True
     
-    # Version information
-    VERSION_FILE_PATH = os.getenv("VERSION_FILE_PATH", "version.info")
-    
     @classmethod
     def to_dict(cls) -> Dict[str, Any]:
         """Convert config to dictionary for Flask configuration."""

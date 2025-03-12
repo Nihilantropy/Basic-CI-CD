@@ -1,12 +1,27 @@
-# Use the official Python image as the base image
+# Use Python 3.9 as the base image
 FROM python:3.9-slim
 
-# Install necessary packages and remove cache to reduce image size
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y sudo binutils && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    sudo \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r srcs/requirements.txt && \
-    pip install pytest pyinstaller requests ruff bandit
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    pytest \
+    pyinstaller \
+    ruff \
+    bandit \
+    flask \
+    flask-limiter \
+    requests
+
 # Set the working directory
-WORKDIR /usr/src/app
+WORKDIR /app
+
+# Keep the container running
+CMD ["tail", "-f", "/dev/null"]

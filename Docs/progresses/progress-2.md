@@ -30,4 +30,9 @@
 
 ### Find a tool to perform simulate DOS attack in order to test flask-app rate limit (Using Gatling Open Source)
 
-### 
+### Developed Jenkinsfile pipeline:
+    1. added ruff stage
+    2. added bandit stage
+    3. instert gilab stage post request for instant feedback
+    4. added version.info changes directly to the gitlab repo from the Jenkinsfile stage
+    

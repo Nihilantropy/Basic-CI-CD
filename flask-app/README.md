@@ -247,7 +247,7 @@ pytest srcs/tests --maxfail=1 --disable-warnings -q
 
 ### Other tests
 
-Other test can be performed using tools like *Gatling Open Source* or customized bash script that simulate DoS attacks 
+Other test can be performed using tools like *Gatling Open Source* or customized bash script that simulate DoS attacks
 
 ### Building and Running
 
