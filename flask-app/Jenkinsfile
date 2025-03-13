@@ -4,7 +4,7 @@ pipeline {
         dockerfile {
             filename 'Dockerfile'
             dir 'agent'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            args '--network=host -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
@@ -285,25 +285,28 @@ pipeline {
                         sh "echo 'Current directory: ' && pwd"
                         sh "ls -la"
                         
-                        // Configure Git 
-                        sh "git config user.email 'claudio0017.work@gmail.com'"
-                        sh "git config user.name 'crea'"
-                        
                         // Print git status for debugging
-                        sh "git status"
+                        sh "git status && cat .git/config && printenv"
+
+						sh '''
+							git config --global user.email "claudio0017.work@gmail.com"
+							git config --global user.name "crea"
+						'''
                         
                         // Add, commit, and push version-related changes
-                        sh "git add version.info srcs/main/version.py"
+                        sh "git add version.info"
                         sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
-                        
-                        script {
-                            def gitRepoUrl = "http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab.local/pipeline-project-group/app-flask.git"
-                            
-                            // Commands that use gitRepoUrl
-                            sh "git push ${gitRepoUrl} HEAD:developer"
-                            sh "git tag -a ${env.TIMESTAMP} -m 'Release ${env.TIMESTAMP}'"
-                            sh "git push ${gitRepoUrl} ${env.TIMESTAMP}"
-                        }
+
+						sh '''
+							# Push to the same repository as your remote origin
+							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/main
+							echo timestamp is: $TIMESTAMP
+							# Create tag with proper syntax - note the tag name $TIMESTAMP here
+							git tag -a $TIMESTAMP -m "Release $TIMESTAMP"
+							
+							# Push the tag
+							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git refs/tags/$TIMESTAMP
+						'''
                         
                         // Notify about successful tag creation
                         notify("Jenkins: Tag ${env.TIMESTAMP} created and pushed")

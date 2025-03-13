@@ -1,3 +1,5 @@
+version: ""
+
 replicaCount: 2
 
 agentName: "PippoSowlo"
