@@ -18,8 +18,6 @@ docker-workflow:latest
 docker-plugin:latest
 
 # BlueOcean UI and pipeline visualization
-blueocean:latest
-blueocean-dashboard:latest
 blueocean-git-pipeline:latest
 blueocean-pipeline-api-impl:latest
 blueocean-web:latest
@@ -44,6 +42,7 @@ git-client:latest
 git-server:latest
 github:latest
 github-branch-source:latest
+scmskip
 
 # Useful tools
 ansicolor:latest

@@ -44,3 +44,18 @@
 
 ## NEXT: working on the Jenkinsfile -> Gitlab push
     
+---
+
+# Day 3
+
+### Worked on Jenkinsfile - GitLab push requests
+
+### Updated Docker agent to share host network to allow communication with gitlab from inside container agent
+
+### Push request now work!
+
+### Workin on push request filtering using [ci skip] (or equivalent) filter keyword in commit message
+
+### Trying to find a way to optimize resources
+
+### Pipeline working! have to use credentials for git email and username

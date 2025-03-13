@@ -8,10 +8,9 @@ pipeline {
         }
     }
 
-    options {
-        // Reference the GitLab connection name you created in Jenkins
-        gitLabConnection('gitlab-local')  // Use the name you specified in Jenkins config
-    }
+	options {
+		gitLabConnection('gitlab-local')
+	}
 
     parameters {
         // Core execution controls - these will only be used for manual builds
@@ -50,6 +49,14 @@ pipeline {
     }
 
     stages {
+		stage('Checkout') {
+			steps {
+                checkout scm
+
+                scmSkip(deleteBuild: true, skipPattern:'.*\\[ci skip\\].*')
+			}
+		}
+
         stage('Load Configuration') {
             steps {
                 script {
@@ -280,26 +287,20 @@ pipeline {
                 runStage('git-push', 'Pushing version updates to repository... 📤') {
                     withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
                                                      usernameVariable: 'GIT_USERNAME', 
-                                                     passwordVariable: 'GIT_PASSWORD')]) {
-                        // Print diagnostic information
-                        sh "echo 'Current directory: ' && pwd"
-                        sh "ls -la"
-                        
-                        // Print git status for debugging
-                        sh "git status && cat .git/config && printenv"
-
+                                                     passwordVariable: 'GIT_PASSWORD')]) {              
 						sh '''
-							git config --global user.email "claudio0017.work@gmail.com"
-							git config --global user.name "crea"
+							git config user.email "claudio0017.work@gmail.com"
+							git config user.name "crea"
 						'''
                         
                         // Add, commit, and push version-related changes
                         sh "git add version.info"
                         sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
 
+
 						sh '''
 							# Push to the same repository as your remote origin
-							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/main
+							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/$GIT_BRANCH
 							echo timestamp is: $TIMESTAMP
 							# Create tag with proper syntax - note the tag name $TIMESTAMP here
 							git tag -a $TIMESTAMP -m "Release $TIMESTAMP"
@@ -307,6 +308,10 @@ pipeline {
 							# Push the tag
 							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git refs/tags/$TIMESTAMP
 						'''
+
+
+						// TODO push on the main branch the new app Release (entire folder) with the timestamp version
+
                         
                         // Notify about successful tag creation
                         notify("Jenkins: Tag ${env.TIMESTAMP} created and pushed")
