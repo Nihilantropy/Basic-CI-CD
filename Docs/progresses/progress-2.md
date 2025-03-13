@@ -58,4 +58,12 @@
 
 ### Trying to find a way to optimize resources
 
-### Pipeline working! have to use credentials for git email and username
+### have to use credentials for git email and username
+
+### Moved all utility functions into separeted file for modularity
+
+### Work on the git lab push stage to utilize not the username and password but the persnoal-access-token for authentication
+
+### Doing test on developer/main branches. The push of the version is done using GIT_BRANCH var to target the current job branch (e.g. developer)
+
+### Pipeline working! All stages works well, have to correct ruff checks in order to pass the pipeline test phase

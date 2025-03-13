@@ -8,9 +8,9 @@ pipeline {
         }
     }
 
-	options {
-		gitLabConnection('gitlab-local')
-	}
+    options {
+        gitLabConnection('gitlab-local')
+    }
 
     parameters {
         // Core execution controls - these will only be used for manual builds
@@ -43,19 +43,24 @@ pipeline {
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
-        
-        // The repository URL base (will be used with credentials)
-        GIT_REPO_URL = "http://gitlab/pipeline-project-group/app-flask.git"
     }
 
     stages {
-		stage('Checkout') {
-			steps {
+        stage('Load Utilities') {
+            steps {
+                script {
+                    // Load utility functions from the includes directory
+                    utils = load "includes/cicdUtils.groovy"
+                }
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
                 checkout scm
-
                 scmSkip(deleteBuild: true, skipPattern:'.*\\[ci skip\\].*')
-			}
-		}
+            }
+        }
 
         stage('Load Configuration') {
             steps {
@@ -109,10 +114,11 @@ pipeline {
             steps {
                 script {
                     // Update GitLab status if enabled
-                    updateGitLabStatus('pipeline', 'running')
+                    utils.updateGitLabStatus('pipeline', 'running', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
                     
                     // Send notification
-                    notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
+                    utils.notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}", 
+                            env.DO_ENABLE_TELEGRAM.toBoolean())
                     
                     // Print selected stages for clarity
                     echo "Running with the following configuration:"
@@ -137,11 +143,15 @@ pipeline {
                 }
             }
             steps {
-                runStage('tests', 'Running tests with pytest... 🧪') {
-                    sh '''
-                    . /app/venv/bin/activate
-                    python -m pytest srcs/tests --maxfail=1 --disable-warnings -v
-                    '''
+                script {
+                    utils.runStage('tests', 'Running tests with pytest... 🧪',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        sh '''
+                        . /app/venv/bin/activate
+                        python -m pytest srcs/tests --maxfail=1 --disable-warnings -v
+                        '''
+                    }
                 }
             }
         }
@@ -153,11 +163,15 @@ pipeline {
                 }
             }
             steps {
-                runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
-                    sh '''
-                    . /app/venv/bin/activate
-                    python -m ruff check . --select all
-                    '''
+                script {
+                    utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        sh '''
+                        . /app/venv/bin/activate
+                        python -m ruff check . --select all
+                        '''
+                    }
                 }
             }
         }
@@ -169,11 +183,15 @@ pipeline {
                 }
             }
             steps {
-                runStage('bandit', 'Running Bandit security check... 🔒') {
-                    sh '''
-                    . /app/venv/bin/activate
-                    python -m bandit -r . -ll -iii
-                    '''
+                script {
+                    utils.runStage('bandit', 'Running Bandit security check... 🔒',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        sh '''
+                        . /app/venv/bin/activate
+                        python -m bandit -r . -ll -iii
+                        '''
+                    }
                 }
             }
         }
@@ -185,15 +203,19 @@ pipeline {
                 }
             }
             steps {
-                runStage('version-update', 'Updating version information... 📝') {
-                    // Update version.py with the timestamp
-                    sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
-                    
-                    // Verify version.py was updated correctly
-                    sh "cat srcs/main/version.py"
-                    
-                    // Also update version.info file to keep it in sync
-                    sh "echo ${env.TIMESTAMP} > version.info"
+                script {
+                    utils.runStage('version-update', 'Updating version information... 📝',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        // Update version.py with the timestamp
+                        sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
+                        
+                        // Verify version.py was updated correctly
+                        sh "cat srcs/main/version.py"
+                        
+                        // Also update version.info file to keep it in sync
+                        sh "echo ${env.TIMESTAMP} > version.info"
+                    }
                 }
             }
         }
@@ -205,12 +227,16 @@ pipeline {
                 }
             }
             steps {
-                runStage('build', 'Building executable using PyInstaller... 🔧') {
-                    // Run PyInstaller directly using the binary instead of the module
-                    sh '''
-                    . /app/venv/bin/activate
-                    /app/venv/bin/pyinstaller --onefile srcs/main/app.py --name flask-app
-                    '''
+                script {
+                    utils.runStage('build', 'Building executable using PyInstaller... 🔧',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        // Run PyInstaller directly using the binary instead of the module
+                        sh '''
+                        . /app/venv/bin/activate
+                        /app/venv/bin/pyinstaller --onefile srcs/main/app.py --name flask-app
+                        '''
+                    }
                 }
             }
         }
@@ -222,8 +248,12 @@ pipeline {
                 }
             }
             steps {
-                runStage('archive', 'Archiving the built executable... 📦') {
-                    archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
+                script {
+                    utils.runStage('archive', 'Archiving the built executable... 📦',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
+                    }
                 }
             }
         }
@@ -235,44 +265,48 @@ pipeline {
                 }
             }
             steps {
-                runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀') {
-                    // Upload with "latest" tag
-                    nexusArtifactUploader(
-                        nexusVersion: env.NEXUS_VERSION,
-                        protocol: env.NEXUS_PROTOCOL,
-                        nexusUrl: env.NEXUS_URL,
-                        groupId: env.GROUP_ID,
-                        version: 'latest',
-                        repository: env.NEXUS_REPO,
-                        credentialsId: env.NEXUS_CREDENTIALS_ID,
-                        artifacts: [
-                            [
-                                artifactId: env.ARTIFACT_ID,
-                                type: 'bin',
-                                file: 'dist/flask-app',
-                                classifier: ''
+                script {
+                    utils.runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        // Upload with "latest" tag
+                        nexusArtifactUploader(
+                            nexusVersion: env.NEXUS_VERSION,
+                            protocol: env.NEXUS_PROTOCOL,
+                            nexusUrl: env.NEXUS_URL,
+                            groupId: env.GROUP_ID,
+                            version: 'latest',
+                            repository: env.NEXUS_REPO,
+                            credentialsId: env.NEXUS_CREDENTIALS_ID,
+                            artifacts: [
+                                [
+                                    artifactId: env.ARTIFACT_ID,
+                                    type: 'bin',
+                                    file: 'dist/flask-app',
+                                    classifier: ''
+                                ]
                             ]
-                        ]
-                    )
-                    
-                    // Upload with timestamp tag
-                    nexusArtifactUploader(
-                        nexusVersion: env.NEXUS_VERSION,
-                        protocol: env.NEXUS_PROTOCOL,
-                        nexusUrl: env.NEXUS_URL,
-                        groupId: env.GROUP_ID,
-                        version: env.TIMESTAMP,
-                        repository: env.NEXUS_REPO,
-                        credentialsId: env.NEXUS_CREDENTIALS_ID,
-                        artifacts: [
-                            [
-                                artifactId: env.ARTIFACT_ID,
-                                type: 'bin',
-                                file: 'dist/flask-app',
-                                classifier: ''
+                        )
+                        
+                        // Upload with timestamp tag
+                        nexusArtifactUploader(
+                            nexusVersion: env.NEXUS_VERSION,
+                            protocol: env.NEXUS_PROTOCOL,
+                            nexusUrl: env.NEXUS_URL,
+                            groupId: env.GROUP_ID,
+                            version: env.TIMESTAMP,
+                            repository: env.NEXUS_REPO,
+                            credentialsId: env.NEXUS_CREDENTIALS_ID,
+                            artifacts: [
+                                [
+                                    artifactId: env.ARTIFACT_ID,
+                                    type: 'bin',
+                                    file: 'dist/flask-app',
+                                    classifier: ''
+                                ]
                             ]
-                        ]
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -284,37 +318,32 @@ pipeline {
                 }
             }
             steps {
-                runStage('git-push', 'Pushing version updates to repository... 📤') {
-                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
-                                                     usernameVariable: 'GIT_USERNAME', 
-                                                     passwordVariable: 'GIT_PASSWORD')]) {              
-						sh '''
-							git config user.email "claudio0017.work@gmail.com"
-							git config user.name "crea"
-						'''
-                        
-                        // Add, commit, and push version-related changes
-                        sh "git add version.info"
-                        sh "git commit -m 'Update version to ${env.TIMESTAMP} [ci skip]'"
-
-
-						sh '''
-							# Push to the same repository as your remote origin
-							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/$GIT_BRANCH
-							echo timestamp is: $TIMESTAMP
-							# Create tag with proper syntax - note the tag name $TIMESTAMP here
-							git tag -a $TIMESTAMP -m "Release $TIMESTAMP"
-							
-							# Push the tag
-							git push http://$GIT_USERNAME:$GIT_PASSWORD@gitlab/pipeline-project-group/pipeline-project.git refs/tags/$TIMESTAMP
-						'''
-
-
-						// TODO push on the main branch the new app Release (entire folder) with the timestamp version
-
-                        
-                        // Notify about successful tag creation
-                        notify("Jenkins: Tag ${env.TIMESTAMP} created and pushed")
+                script {
+                    utils.runStage('git-push', 'Updating repositories and tagging release... 📤',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
+                                                         usernameVariable: 'GIT_USERNAME', 
+                                                         passwordVariable: 'GIT_PASSWORD')]) {
+                            // Set up Git configuration
+                            sh '''
+                                git config user.email "claudio0017.work@gmail.com"
+                                git config user.name "crea"
+                            '''
+                            
+                            // Helper function to build Git URL with credentials
+                            def gitRepoUrl = 'http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab/pipeline-project-group/pipeline-project.git'
+                            
+                            // Update version info and commit
+                            utils.updateVersionInfo(gitRepoUrl, env.TIMESTAMP, env.GIT_BRANCH)
+                            
+                            // Create and push tag (after main branch is updated)
+                            utils.createReleaseTag(gitRepoUrl, env.TIMESTAMP)
+                            
+                            // Notify about successful operations
+                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch and main. Tag created successfully.",
+                                      env.DO_ENABLE_TELEGRAM.toBoolean())
+                        }
                     }
                 }
             }
@@ -324,67 +353,17 @@ pipeline {
     post {
         success {
             script {
-                updateGitLabStatus('pipeline', 'success')
-                notify("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.")
+                utils.updateGitLabStatus('pipeline', 'success', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
+                utils.notify("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.",
+                           env.DO_ENABLE_TELEGRAM.toBoolean())
             }
         }
         failure {
             script {
-                updateGitLabStatus('pipeline', 'failed')
-                notify("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.")
+                utils.updateGitLabStatus('pipeline', 'failed', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
+                utils.notify("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.",
+                           env.DO_ENABLE_TELEGRAM.toBoolean())
             }
         }
-    }
-}
-
-// Helper function to update GitLab status
-def updateGitLabStatus(String name, String state) {
-    if (env.DO_ENABLE_GITLAB_STATUS == 'true') {
-        updateGitlabCommitStatus name: name, state: state
-    } else {
-        echo "GitLab status updates disabled. Would have set ${name} to ${state}."
-    }
-}
-
-// Helper function to send notifications
-def notify(String message) {
-    echo message
-    if (env.DO_ENABLE_TELEGRAM == 'true') {
-        sendTelegramMessage(message)
-    } else {
-        echo "Telegram notifications disabled. Would have sent: ${message}"
-    }
-}
-
-// Helper function to execute a stage with proper error handling
-def runStage(String stageName, String notificationMessage, Closure stageBody) {
-    updateGitLabStatus(stageName, 'running')
-    try {
-        notify("Jenkins: ${notificationMessage}")
-        stageBody()
-        updateGitLabStatus(stageName, 'success')
-        notify("Jenkins: ${stageName} completed successfully ✅")
-    } catch (Exception e) {
-        updateGitLabStatus(stageName, 'failed')
-        def errorLog = e.getMessage()
-        notify("Jenkins: ${stageName} failed ❌\n")
-        error "${stageName} failed. Pipeline interrupted."
-    }
-}
-
-// Send message to Telegram
-def sendTelegramMessage(String message) {
-    // URL encode the message
-    def encodedMessage = URLEncoder.encode(message, "UTF-8")
-    
-    withCredentials([
-        string(credentialsId: 'telegram-token', variable: 'TOKEN'),
-        string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')
-    ]) {
-        sh '''
-            curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage \
-            -d chat_id=${CHAT_ID} \
-            -d text="''' + encodedMessage + '''"
-        '''
     }
 }

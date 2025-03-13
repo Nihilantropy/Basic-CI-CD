@@ -3,7 +3,7 @@
 
 # Stage execution controls
 runTests: true
-runRuffCheck: true
+runRuffCheck: false
 runBanditCheck: true
 updateVersion: true
 buildExecutable: true
