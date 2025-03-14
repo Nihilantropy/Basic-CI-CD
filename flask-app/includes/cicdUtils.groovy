@@ -1,7 +1,10 @@
 #!/usr/bin/env groovy
 
 // Helper function to update GitLab status
-def updateGitLabStatus(String name, String state, Boolean enableUpdates) {
+def updateGitLabStatus(String name, String state) {
+
+    def enableUpdates = env.DO_ENABLE_GITLAB_STATUS?.toBoolean() ?: false
+
     if (enableUpdates) {
         updateGitlabCommitStatus name: name, state: state
     } else {
@@ -10,8 +13,11 @@ def updateGitLabStatus(String name, String state, Boolean enableUpdates) {
 }
 
 // Helper function to send notifications
-def notify(String message, Boolean enableTelegram) {
+def notify(String message) {
     echo message
+
+    def enableTelegram = env.DO_ENABLE_TELEGRAM?.toBoolean() ?: false
+
     if (enableTelegram) {
         sendTelegramMessage(message)
     } else {
@@ -37,46 +43,88 @@ def sendTelegramMessage(String message) {
 }
 
 // Helper function to execute a stage with proper error handling
-def runStage(String stageName, String notificationMessage, Boolean enableGitLabStatus, Boolean enableTelegram, Closure stageBody) {
-    updateGitLabStatus(stageName, 'running', enableGitLabStatus)
+def runStage(String stageName, String notificationMessage, Closure stageBody) {
+
+    updateGitLabStatus(stageName, 'running')
     try {
-        notify("Jenkins: ${notificationMessage}", enableTelegram)
+        notify("Jenkins: ${notificationMessage}")
         stageBody()
-        updateGitLabStatus(stageName, 'success', enableGitLabStatus)
-        notify("Jenkins: ${stageName} completed successfully ✅", enableTelegram)
+        updateGitLabStatus(stageName, 'success')
+        notify("Jenkins: ${stageName} completed successfully ✅")
     } catch (Exception e) {
-        updateGitLabStatus(stageName, 'failed', enableGitLabStatus)
+        updateGitLabStatus(stageName, 'failed')
         def errorLog = e.getMessage()
-        notify("Jenkins: ${stageName} failed ❌\n", enableTelegram)
+        notify("Jenkins: ${stageName} failed ❌\n")
         error "${stageName} failed. Pipeline interrupted."
     }
 }
 
-// Helper function to update version info and commit changes
-def updateVersionInfo(String gitRepoUrl, String timestamp, String gitBranch) {
+def updateVersionInfo() {
     echo "Updating version info and committing changes..."
     
-    // Add, commit, and push version-related changes to current branch
-    sh "git add version.info"
-    sh "git commit -m 'Update version to ${timestamp} [ci skip]'"
-    sh "git push ${gitRepoUrl} HEAD:refs/heads/${gitBranch}"
+    def timestamp = env.TIMESTAMP
+    def gitBranch = env.GIT_BRANCH
+
+    // Add and commit version-related changes - no sensitive data here, can use string interpolation
+    sh """
+        git add version.info
+        git commit -m "Update version to ${timestamp} [ci skip]"
+    """
+    
+    withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
+        sh """
+            git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/${gitBranch}
+        """
+    }
     
     echo "Version info updated on branch ${gitBranch}"
 }
 
-// Helper function to create and push tag
-def createReleaseTag(String gitRepoUrl, String timestamp) {
+def createReleaseTag() {
     echo "Creating and pushing release tag..."
     
+    def timestamp = env.TIMESTAMP
+    // Create tag - no sensitive data here
     sh """
         # Create tag with proper syntax
         git tag -a ${timestamp} -m "Release ${timestamp}"
-        
-        # Push the tag
-        git push ${gitRepoUrl} refs/tags/${timestamp}
-        
-        echo "Release tag ${timestamp} created and pushed"
     """
+    
+    // For GitLab, use oauth2 as the username with the token
+    withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
+        sh """
+            git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git refs/tags/${timestamp}
+        """
+    }
+    
+    echo "Release tag ${timestamp} created and pushed"
+}
+
+// Helper function to create a merge request
+def createMergeRequest(String gitLabHost, String projectPath, String sourceBranch, String targetBranch, String title, String description) {
+    echo "Creating merge request from ${sourceBranch} to ${targetBranch}..."
+    
+    // GitLab's API requires URL-encoded values
+    def encodedTitle = URLEncoder.encode(title, "UTF-8")
+    def encodedDescription = URLEncoder.encode(description, "UTF-8")
+    
+    // Use withCredentials to securely access the token
+    withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
+        // Using curl with single quotes to prevent token exposure in logs
+        def response = sh(script: '''
+            curl -s -X POST \
+            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "http://''' + gitLabHost + '''/api/v4/projects/''' + URLEncoder.encode(projectPath, "UTF-8") + '''/merge_requests" \
+            -d "source_branch=''' + sourceBranch + '''" \
+            -d "target_branch=''' + targetBranch + '''" \
+            -d "title=''' + encodedTitle + '''" \
+            -d "description=''' + encodedDescription + '''" \
+            -d "remove_source_branch=false"
+        ''', returnStdout: true).trim()
+        
+        echo "Merge request creation completed"
+        return response
+    }
 }
 
 return this

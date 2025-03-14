@@ -71,3 +71,15 @@
 ---
 
 # Day 4
+
+### Adjusted Jenkinsfile credentials
+
+### Cleaned up environment
+
+### Worked on security enhancement and resource optimization
+
+### Tested groovy string nterpolation
+
+### Adding workspace cleanup (having issue on the notify telegram action if i cleanup workspace)
+
+### Added timeout control

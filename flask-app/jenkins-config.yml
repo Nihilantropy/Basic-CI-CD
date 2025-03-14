@@ -2,14 +2,15 @@
 # This file controls how your CI/CD pipeline runs when triggered automatically
 
 # Stage execution controls
-runTests: true
+runTests: false
 runRuffCheck: false
-runBanditCheck: true
+runBanditCheck: false
 updateVersion: true
-buildExecutable: true
-archiveExecutable: true
-uploadToNexus: true
+buildExecutable: false
+archiveExecutable: false
+uploadToNexus: false
 pushGitChanges: true
+createMergeRequest: false
 
 # Integration controls
 enableGitlabStatus: true

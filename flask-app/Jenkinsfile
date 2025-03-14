@@ -4,7 +4,7 @@ pipeline {
         dockerfile {
             filename 'Dockerfile'
             dir 'agent'
-            args '--network=host -v /var/run/docker.sock:/var/run/docker.sock'
+            args '--network=host'
         }
     }
 
@@ -22,6 +22,7 @@ pipeline {
         booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
         booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
         booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
+        booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
         
         // Integration controls
         booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
@@ -40,7 +41,6 @@ pipeline {
         
         // Git configuration for pushing changes
         GITLAB_CREDENTIALS_ID = "gitlab-credentials"
-        GITLAB_TOKEN = credentials('gitlab-personal-access-token')
         GITLAB_EMAIL = credentials('gitlab-email-crea')
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
@@ -78,6 +78,7 @@ pipeline {
                     env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
                     env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
                     env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
+                    env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
                     env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
                     env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
                     
@@ -97,6 +98,7 @@ pipeline {
                             if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
                             if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
                             if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
+                            if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
                             if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
                             if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
                             
@@ -132,6 +134,7 @@ pipeline {
                     echo "Archive Executable: ${DO_ARCHIVE_EXECUTABLE}"
                     echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
                     echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
+                    echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
                     echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
                     echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
                 }
@@ -324,39 +327,73 @@ pipeline {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤',
                             env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
                             env.DO_ENABLE_TELEGRAM.toBoolean()) {
-                        withCredentials([usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, 
-                                                         usernameVariable: 'GITLAB_USERNAME', 
-                                                         passwordVariable: 'GITLAB_PASSWORD')]) {
+                            withCredentials([
+                                string(credentialsId: 'gitlab-personal-access-token', variable: 'TOKEN'),
+                                usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
+                            ]) {
                             // Set up Git configuration
                             sh '''
-                                git config user.email "$GITLAB_EMAIL"
-                                git config user.name "$GITLAB_USERNAME"
+                                git config user.email "${GITLAB_EMAIL}"
+                                git config user.name "${USERNAME}"
                             '''
-                            
-                            // A safer way to build the Git URL without using Groovy interpolation
-                            // Write to a temporary file that's not in the workspace (to avoid accidental commit)
-                            sh '''
-                                echo "http://oauth2:$GITLAB_TOKEN@gitlab/pipeline-project-group/pipeline-project.git" > /tmp/giturl.txt
-                            '''
-                            def gitRepoUrl = sh(script: 'cat /tmp/giturl.txt', returnStdout: true).trim()
-                            sh 'rm -f /tmp/giturl.txt'  // Clean up
                             
                             // Update version info and commit
-                            utils.updateVersionInfo(gitRepoUrl, env.TIMESTAMP, env.GIT_BRANCH)
+                            utils.updateVersionInfo(env.TIMESTAMP, env.GIT_BRANCH)
                             
                             // Create and push tag (after main branch is updated)
-                            utils.createReleaseTag(gitRepoUrl, env.TIMESTAMP)
+                            utils.createReleaseTag(env.TIMESTAMP)
                             
                             // Notify about successful operations
-                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch and main. Tag created successfully.",
+                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}. Tag created successfully.",
                                       env.DO_ENABLE_TELEGRAM.toBoolean())
                         }
                     }
                 }
             }
         }
+
+        stage('Create Merge Request') {
+            when {
+                expression { 
+                    return env.DO_CREATE_MERGE_REQUEST == 'true' && env.DO_PUSH_GIT_CHANGES == 'true'
+                }
+            }
+            steps {
+                script {
+                    utils.runStage('merge-request', 'Creating merge request to main branch... 🔄',
+                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
+                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                        def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
+                        
+                        // Skip if we're already on main
+                        if (currentBranch != 'main') {
+                            // Create a descriptive title and message
+                            def mrTitle = "Merge ${currentBranch} to main - Version ${env.TIMESTAMP}"
+                            def mrDescription = """
+                            This merge request was automatically generated by the Jenkins pipeline.
+                            
+                            It includes changes for version ${env.TIMESTAMP} that have been tagged and should be merged to the main branch.
+                            
+                            Build: ${env.BUILD_URL}
+                            """
+                         
+                            // Create the merge request
+                            def response = utils.createMergeRequest("gitlab", "pipeline-project-group/pipeline-project", 
+                                        currentBranch, "main", mrTitle, mrDescription)
+                            
+                            sh 'echo ${response}'
+                            // Notify about successful MR creation
+                            utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.",
+                                    env.DO_ENABLE_TELEGRAM.toBoolean())
+                        } else {
+                            echo "Current branch is main, skipping merge request creation"
+                        }
+                    }
+                }
+            }
+        }
     }
-    
+
     post {
         success {
             script {

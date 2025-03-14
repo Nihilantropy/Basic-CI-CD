@@ -47,3 +47,4 @@ scmskip
 # Useful tools
 ansicolor:latest
 build-monitor-plugin:latest
+http_request:1.20
