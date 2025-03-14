@@ -10,6 +10,7 @@ pipeline {
 
     options {
         gitLabConnection('gitlab-local')
+        timeout(time: 90, unit: 'SECONDS')
     }
 
     parameters {
@@ -48,6 +49,18 @@ pipeline {
     }
 
     stages {
+
+        // First clean the workspace, then check out code ONCE
+        stage('Checkout & Cleanup') {
+            steps {
+                // Then check out the code
+                checkout scm
+                
+                // Skip build if commit has [ci skip]
+                scmSkip(deleteBuild: true, skipPattern:'.*\\[ci skip\\].*')
+            }
+        }
+
         stage('Load Utilities') {
             steps {
                 script {
@@ -57,12 +70,6 @@ pipeline {
             }
         }
         
-        stage('Checkout') {
-            steps {
-                checkout scm
-                scmSkip(deleteBuild: true, skipPattern:'.*\\[ci skip\\].*')
-            }
-        }
 
         stage('Load Configuration') {
             steps {
@@ -118,11 +125,10 @@ pipeline {
             steps {
                 script {
                     // Update GitLab status if enabled
-                    utils.updateGitLabStatus('pipeline', 'running', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
+                    utils.updateGitLabStatus('pipeline', 'running')
                     
                     // Send notification
-                    utils.notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}", 
-                            env.DO_ENABLE_TELEGRAM.toBoolean())
+                    utils.notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
                     
                     // Print selected stages for clarity
                     echo "Running with the following configuration:"
@@ -149,9 +155,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('tests', 'Running tests with pytest... 🧪',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('tests', 'Running tests with pytest... 🧪') {
                         sh '''
                         . /app/venv/bin/activate
                         python -m pytest srcs/tests --maxfail=1 --disable-warnings -v
@@ -169,9 +173,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
                         sh '''
                         . /app/venv/bin/activate
                         python -m ruff check . --select all
@@ -189,9 +191,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('bandit', 'Running Bandit security check... 🔒',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('bandit', 'Running Bandit security check... 🔒') {
                         sh '''
                         . /app/venv/bin/activate
                         python -m bandit -r . -ll -iii
@@ -209,9 +209,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('version-update', 'Updating version information... 📝',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('version-update', 'Updating version information... 📝') {
                         // Update version.py with the timestamp
                         sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
                         
@@ -233,9 +231,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('build', 'Building executable using PyInstaller... 🔧',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('build', 'Building executable using PyInstaller... 🔧') {
                         // Run PyInstaller directly using the binary instead of the module
                         sh '''
                         . /app/venv/bin/activate
@@ -254,9 +250,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('archive', 'Archiving the built executable... 📦',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('archive', 'Archiving the built executable... 📦') {
                         archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
                     }
                 }
@@ -271,9 +265,7 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀') {
                         // Upload with "latest" tag
                         nexusArtifactUploader(
                             nexusVersion: env.NEXUS_VERSION,
@@ -324,9 +316,8 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('git-push', 'Updating repositories and tagging release... 📤',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('git-push', 'Updating repositories and tagging release... 📤') {
+
                             withCredentials([
                                 string(credentialsId: 'gitlab-personal-access-token', variable: 'TOKEN'),
                                 usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
@@ -360,9 +351,8 @@ pipeline {
             }
             steps {
                 script {
-                    utils.runStage('merge-request', 'Creating merge request to main branch... 🔄',
-                            env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
-                            env.DO_ENABLE_TELEGRAM.toBoolean()) {
+                    utils.runStage('merge-request', 'Creating merge request to main branch... 🔄') {
+
                         def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
                         
                         // Skip if we're already on main
@@ -397,16 +387,24 @@ pipeline {
     post {
         success {
             script {
-                utils.updateGitLabStatus('pipeline', 'success', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
-                utils.notify("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.",
-                           env.DO_ENABLE_TELEGRAM.toBoolean())
+                utils.updateGitLabStatus('pipeline', 'success')
+                utils.notify("🎉 Pipeline succeeded for ${env.JOB_NAME} #${env.BUILD_NUMBER}! All stages completed successfully.")
+                
+                echo "Performing final cleanup..."
+                
+                // Clean workspace
+                cleanWs()
             }
         }
         failure {
             script {
-                utils.updateGitLabStatus('pipeline', 'failed', env.DO_ENABLE_GITLAB_STATUS.toBoolean())
-                utils.notify("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.",
-                           env.DO_ENABLE_TELEGRAM.toBoolean())
+                utils.updateGitLabStatus('pipeline', 'failed')
+                utils.notify("❌ Pipeline failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check Jenkins for details.")
+                
+                echo "Performing final cleanup..."
+            
+                // Clean workspace
+                cleanWs()
             }
         }
     }

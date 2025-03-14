@@ -3,6 +3,3 @@ FROM gitlab/gitlab-ce:nightly
 
 # Expose GitLab required ports
 EXPOSE 80 443 22
-
-# Define default startup command
-CMD ["/assets/wrapper"]
