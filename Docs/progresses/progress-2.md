@@ -62,7 +62,7 @@
 
 ### Moved all utility functions into separeted file for modularity
 
-### Work on the git lab push stage to utilize not the username and password but the persnoal-access-token for authentication
+### Work on the git lab push stage to utilize not the username and password but the personal-access-token for authentication
 
 ### Doing test on developer/main branches. The push of the version is done using GIT_BRANCH var to target the current job branch (e.g. developer)
 
@@ -83,3 +83,5 @@
 ### Adding workspace cleanup (having issue on the notify telegram action if i cleanup workspace)
 
 ### Added timeout control
+
+### Studied Jenkins functionality

@@ -54,7 +54,7 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
     } catch (Exception e) {
         updateGitLabStatus(stageName, 'failed')
         def errorLog = e.getMessage()
-        notify("Jenkins: ${stageName} failed ❌\n")
+        notify("Jenkins: ${stageName} failed ❌\n${errorLog}")
         error "${stageName} failed. Pipeline interrupted."
     }
 }

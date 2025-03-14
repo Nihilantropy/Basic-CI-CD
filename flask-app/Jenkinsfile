@@ -176,7 +176,7 @@ pipeline {
                     utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
                         sh '''
                         . /app/venv/bin/activate
-                        python -m ruff check . --select all
+                        python -m ruff check srcs/main --select ALL
                         '''
                     }
                 }
@@ -233,10 +233,10 @@ pipeline {
                 script {
                     utils.runStage('build', 'Building executable using PyInstaller... 🔧') {
                         // Run PyInstaller directly using the binary instead of the module
-                        sh '''
+                        sh """
                         . /app/venv/bin/activate
-                        /app/venv/bin/pyinstaller --onefile srcs/main/app.py --name flask-app
-                        '''
+                        /app/venv/bin/pyinstaller --onefile srcs/main/app.py --name ${ARTIFACT_ID}
+                        """
                     }
                 }
             }
@@ -251,7 +251,7 @@ pipeline {
             steps {
                 script {
                     utils.runStage('archive', 'Archiving the built executable... 📦') {
-                        archiveArtifacts artifacts: 'dist/appflask', fingerprint: true
+                        archiveArtifacts artifacts: "dist/${ARTIFACT_ID}", fingerprint: true
                     }
                 }
             }
@@ -279,7 +279,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'dist/appflask',
+                                    file: "dist/${ARTIFACT_ID}",
                                     classifier: ''
                                 ]
                             ]
@@ -298,7 +298,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'dist/appflask',
+                                    file: "dist/${ARTIFACT_ID}",
                                     classifier: ''
                                 ]
                             ]
@@ -319,7 +319,6 @@ pipeline {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤') {
 
                             withCredentials([
-                                string(credentialsId: 'gitlab-personal-access-token', variable: 'TOKEN'),
                                 usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
                             ]) {
                             // Set up Git configuration
@@ -329,14 +328,13 @@ pipeline {
                             '''
                             
                             // Update version info and commit
-                            utils.updateVersionInfo(env.TIMESTAMP, env.GIT_BRANCH)
+                            utils.updateVersionInfo()
                             
                             // Create and push tag (after main branch is updated)
-                            utils.createReleaseTag(env.TIMESTAMP)
+                            utils.createReleaseTag()
                             
                             // Notify about successful operations
-                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}. Tag created successfully.",
-                                      env.DO_ENABLE_TELEGRAM.toBoolean())
+                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}. Tag created successfully.")
                         }
                     }
                 }
@@ -373,8 +371,7 @@ pipeline {
                             
                             sh 'echo ${response}'
                             // Notify about successful MR creation
-                            utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.",
-                                    env.DO_ENABLE_TELEGRAM.toBoolean())
+                            utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.")
                         } else {
                             echo "Current branch is main, skipping merge request creation"
                         }
