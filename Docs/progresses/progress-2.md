@@ -67,3 +67,7 @@
 ### Doing test on developer/main branches. The push of the version is done using GIT_BRANCH var to target the current job branch (e.g. developer)
 
 ### Pipeline working! All stages works well, have to correct ruff checks in order to pass the pipeline test phase
+
+---
+
+# Day 4

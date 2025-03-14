@@ -39,7 +39,9 @@ pipeline {
         ARTIFACT_ID = "flask-app"
         
         // Git configuration for pushing changes
-        GIT_CREDENTIALS_ID = "gitlab-credentials"
+        GITLAB_CREDENTIALS_ID = "gitlab-credentials"
+        GITLAB_TOKEN = credentials('gitlab-personal-access-token')
+        GITLAB_EMAIL = credentials('gitlab-email-crea')
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
@@ -322,17 +324,22 @@ pipeline {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤',
                             env.DO_ENABLE_GITLAB_STATUS.toBoolean(),
                             env.DO_ENABLE_TELEGRAM.toBoolean()) {
-                        withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, 
-                                                         usernameVariable: 'GIT_USERNAME', 
-                                                         passwordVariable: 'GIT_PASSWORD')]) {
+                        withCredentials([usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, 
+                                                         usernameVariable: 'GITLAB_USERNAME', 
+                                                         passwordVariable: 'GITLAB_PASSWORD')]) {
                             // Set up Git configuration
                             sh '''
-                                git config user.email "claudio0017.work@gmail.com"
-                                git config user.name "crea"
+                                git config user.email "$GITLAB_EMAIL"
+                                git config user.name "$GITLAB_USERNAME"
                             '''
                             
-                            // Helper function to build Git URL with credentials
-                            def gitRepoUrl = 'http://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab/pipeline-project-group/pipeline-project.git'
+                            // A safer way to build the Git URL without using Groovy interpolation
+                            // Write to a temporary file that's not in the workspace (to avoid accidental commit)
+                            sh '''
+                                echo "http://oauth2:$GITLAB_TOKEN@gitlab/pipeline-project-group/pipeline-project.git" > /tmp/giturl.txt
+                            '''
+                            def gitRepoUrl = sh(script: 'cat /tmp/giturl.txt', returnStdout: true).trim()
+                            sh 'rm -f /tmp/giturl.txt'  // Clean up
                             
                             // Update version info and commit
                             utils.updateVersionInfo(gitRepoUrl, env.TIMESTAMP, env.GIT_BRANCH)

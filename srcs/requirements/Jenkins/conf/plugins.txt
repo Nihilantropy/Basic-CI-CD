@@ -47,4 +47,3 @@ scmskip
 # Useful tools
 ansicolor:latest
 build-monitor-plugin:latest
-dashboard-view:latest
