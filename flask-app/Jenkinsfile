@@ -38,7 +38,7 @@ pipeline {
         NEXUS_REPO = "my-artifacts"
         NEXUS_CREDENTIALS_ID = "bb41509b-d0cc-4f65-94a4-755c22441930"
         GROUP_ID = "WmcA"
-        ARTIFACT_ID = "flask-app"
+        ARTIFACT_ID = "appflask"
         
         // Git configuration for pushing changes
         GITLAB_CREDENTIALS_ID = "gitlab-credentials"
@@ -251,7 +251,7 @@ pipeline {
             steps {
                 script {
                     utils.runStage('archive', 'Archiving the built executable... 📦') {
-                        archiveArtifacts artifacts: 'dist/flask-app', fingerprint: true
+                        archiveArtifacts artifacts: 'dist/appflask', fingerprint: true
                     }
                 }
             }
@@ -279,7 +279,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'dist/flask-app',
+                                    file: 'dist/appflask',
                                     classifier: ''
                                 ]
                             ]
@@ -298,7 +298,7 @@ pipeline {
                                 [
                                     artifactId: env.ARTIFACT_ID,
                                     type: 'bin',
-                                    file: 'dist/flask-app',
+                                    file: 'dist/appflask',
                                     classifier: ''
                                 ]
                             ]
