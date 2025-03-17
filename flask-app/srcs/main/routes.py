@@ -1,35 +1,58 @@
-from flask import Blueprint, jsonify
-from datetime import datetime
-import os
+"""Routes module for the Flask application.
+
+This module defines the endpoints available in the application.
+"""
 import logging
+import os
+from datetime import datetime, timezone
+
+from flask import Blueprint, Response, jsonify
 
 # Import the global version variable
 from .version import get_version
 
 # Create a blueprint for the routes
-main_blueprint = Blueprint('main', __name__)
+main_blueprint = Blueprint("main", __name__)
 logger = logging.getLogger(__name__)
 
-# Note: We're not applying rate limits at the route level anymore
-# This allows the global application limits to work across all routes
+@main_blueprint.route("/")
+def hello_world() -> Response:
+    """Return a greeting with agent name, version and time.
 
-@main_blueprint.route('/')
-def hello_world():
-    """Main endpoint that returns a greeting with agent name, version and time."""
+    Returns:
+        Response: JSON response with greeting message
+
+    """
     agent_name = os.getenv("AGENT_NAME", "Unknown")
-    time_now = datetime.now().strftime("%H:%M")
-    
+    # Use timezone to avoid DTZ005 warning
+    time_now = datetime.now(tz=timezone.utc).strftime("%H:%M")
+
     # Use the global version variable
     version = get_version() if get_version() is not None else "unknown"
-    
-    logger.debug(f"Handling / request, agent: {agent_name}, time: {time_now}, version: {version}")
-    
-    return jsonify({
-        "message": f"Hello, my name is {agent_name} version {version} the time is {time_now}"
-    })
 
-@main_blueprint.route('/health')
-def health_check():
-    """Health check endpoint for monitoring."""
+    # Use string formatting that doesn't require f-strings for logging
+    logger.debug(
+        "Handling / request, agent: %s, time: %s, version: %s",
+        agent_name,
+        time_now,
+        version,
+    )
+
+    # Break the long f-string into parts for return
+    message = (
+        f"Hello, my name is {agent_name} version {version} "
+        f"the time is {time_now}"
+    )
+
+    return jsonify({"message": message})
+
+@main_blueprint.route("/health")
+def health_check() -> tuple[Response, int]:
+    """Health check endpoint for monitoring.
+
+    Returns:
+        tuple: JSON response and HTTP status code
+
+    """
     logger.debug("Health check request received")
     return jsonify({"status": "healthy"}), 200
