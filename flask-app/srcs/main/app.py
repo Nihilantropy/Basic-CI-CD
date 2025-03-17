@@ -9,10 +9,10 @@ import logging
 from flask import Flask
 
 # Import our custom modules
-from .config import get_config
-from .errors import register_error_handlers
-from .limiter import RateLimiterFactory
-from .routes import main_blueprint
+from srcs.main.config import get_config
+from srcs.main.errors import register_error_handlers
+from srcs.main.limiter import RateLimiterFactory
+from srcs.main.routes import main_blueprint
 
 
 def create_app() -> Flask:

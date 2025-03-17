@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-cm
+  namespace: {{ .Release.Namespace }}
+data:
+  launch-flask-app.sh: |
+    #!/bin/bash
+    set -e
+    echo "Updating apt-get..."
+    apt-get update
+    echo "Installing wget..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y wget
+    echo "Downloading the executable..."
+    
+    # Use the specified appVersion from values.yaml
+    APP_VERSION="{{ .Values.appVersion }}"
+    echo "Using application version: $APP_VERSION"
+    
+    # Build the download URL based on the version
+    DOWNLOAD_URL="http://nexus-service.nexus.svc.cluster.local:8082/repository/my-artifacts/WmcA/appflask/$APP_VERSION/appflask-$APP_VERSION.bin"
+    echo "Downloading from: $DOWNLOAD_URL"
+    
+    # Download the executable with retry logic
+    MAX_RETRIES=3
+    RETRY_COUNT=0
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+      if wget -O /usr/local/bin/flask-app.bin $DOWNLOAD_URL; then
+        echo "Download successful!"
+        break
+      else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+          echo "Download failed. Retrying in 5 seconds... (Attempt $RETRY_COUNT of $MAX_RETRIES)"
+          sleep 5
+        else
+          echo "Failed to download after $MAX_RETRIES attempts. Exiting."
+          exit 1
+        fi
+      fi
+    done
+    
+    echo "Setting executable permission..."
+    chmod +x /usr/local/bin/flask-app.bin
+    echo "Launching the executable..."
+    
+    # Pass any environment variables
+    export FLASK_ENV="{{ .Values.flaskEnv }}"
+    echo "Using Flask environment: $FLASK_ENV"
+    
+    exec /usr/local/bin/flask-app.bin
