@@ -39,8 +39,6 @@ The pipeline handles code quality checks, security scans, artifact management, v
 
 ## Architecture
 
-![Architecture Diagram](https://via.placeholder.com/800x400?text=CI/CD+Pipeline+Architecture)
-
 The architecture consists of the following main components:
 
 1. **Development Environment**: Dockerized services for local development
@@ -67,7 +65,7 @@ The workflow follows a typical CI/CD pattern:
 - **Artifact Management**: Versioned storage of binaries in Nexus
 - **Automated Versioning**: Timestamp-based versioning with Git tags
 - **Kubernetes Deployment**: Helm charts for declarative application deployment
-- **GitLab Integration**: Merge requests, status updates, and webhook triggers
+- **GitLab Integration**: Merge requests, status updates, and integration triggers
 - **Notification System**: Build status notifications via Telegram
 
 ## Components
@@ -150,8 +148,8 @@ A lightweight Kubernetes deployment using:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/basic-ci-cd.git
-   cd basic-ci-cd
+   git clone https://github.com/Nihilantropy/Basic-CI-CD.git
+   cd Basic-CI-CD
    ```
 
 2. Start the base environment:
@@ -162,7 +160,7 @@ A lightweight Kubernetes deployment using:
 3. Configure GitLab:
    - Access GitLab at http://gitlab.local:8080
    - Set up a user and create a project
-   - Configure webhooks for Jenkins integration
+   - Configure integrations for Jenkins automation
 
 4. Configure Jenkins:
    - Access Jenkins at http://localhost:8081
@@ -181,6 +179,8 @@ A lightweight Kubernetes deployment using:
    kubectl apply -f k3s/service/nexus-headless-endpoint.yaml
    ```
 
+For detailed, step-by-step setup and configuration instructions, please refer to our comprehensive [How to Use Guide](Docs/how-to-use.md).
+
 ### Configuration
 
 1. Update the IP address in `k3s/service/nexus-headless-endpoint.yaml` to your host machine's IP
@@ -188,7 +188,7 @@ A lightweight Kubernetes deployment using:
 2. Configure environment-specific settings in `values.yaml`:
    ```yaml
    appVersion: "latest"
-   flaskEnv: "development"
+   flaskEnv: "default"
    replicaCount: 2
    agentName: "default Agent"
    nodePort: 30080
@@ -243,12 +243,14 @@ A lightweight Kubernetes deployment using:
    curl http://<NODE_IP>:30080/health
    ```
 
+For complete instructions on using the pipeline, deploying applications, and troubleshooting, refer to our [How to Use Guide](Docs/how-to-use.md).
+
 ## Workflow
 
 The typical workflow in this environment:
 
 1. Developer pushes code changes to GitLab
-2. GitLab webhook triggers Jenkins pipeline
+2. GitLab integration triggers Jenkins pipeline
 3. Jenkins runs tests, quality checks, and security scans
 4. If checks pass, Jenkins builds the application
 5. Binary is uploaded to Nexus with version information
@@ -267,6 +269,7 @@ basic-ci-cd/
 │   │   ├── GitLab/
 │   │   ├── Jenkins/
 │   │   └── Nexus/
+│   ├── how-to-use.md             # Comprehensive usage guide
 │   ├── progresses/               # Project progress tracking
 │   ├── subjects/                 # Project requirements
 │   └── workflows/                # Workflow documentation
@@ -301,13 +304,14 @@ basic-ci-cd/
 
 Comprehensive documentation is available in the `Docs` directory:
 
+- **[How to Use Guide](Docs/how-to-use.md)**: Detailed instructions for setting up and using the CI/CD pipeline
 - **Technologies**: Detailed documentation for each tool
 - **Workflows**: Pipeline and process documentation
 - **Subjects**: Original project requirements
 - **Progress**: Development history and milestones
 
 Additional documentation:
-- **Helm README**: Instructions for deploying with Helm
+- **[Helm Chart README](helm/README.md)**: Instructions for deploying with Helm
 - **Flask App README**: Details of the application architecture and features
 - **Jenkinsfile**: Commented pipeline stages and configurations
 
@@ -327,4 +331,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-Developed with ❤️ by [Your Name/Team]
+Developed with ❤️ by [Nihilantropy]
