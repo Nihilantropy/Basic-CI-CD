@@ -96,4 +96,6 @@
 
 ### ALL WORKS!
 
+### Made tests, improvement and documentation on how-to-use
+
 ### Next: find a way to autodeploy helm chart on new app release
