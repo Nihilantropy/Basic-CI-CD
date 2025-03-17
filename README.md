@@ -1,270 +1,330 @@
-# CI/CD Pipeline Project
+# Basic CI/CD Pipeline Project
 
-Welcome to the **CI/CD Pipeline Project**! This project demonstrates an end-to-end continuous integration and deployment workflow using industry-standard tools. The pipeline integrates a base environment setup with Jenkins, Nexus, and GitLab, a Python Flask application, a fully automated Jenkins pipeline, and a configurable Helm Chart for Kubernetes deployments.
+![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Pipeline-blue)
+![Jenkins](https://img.shields.io/badge/Jenkins-v2.492.1-red)
+![GitLab](https://img.shields.io/badge/GitLab-CE-orange)
+![Nexus](https://img.shields.io/badge/Nexus-3-green)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-blueviolet)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
----
+A robust end-to-end CI/CD (Continuous Integration/Continuous Delivery) pipeline implementation demonstrating modern DevOps practices. This project integrates industry-standard tools to automate building, testing, packaging, and deploying a Python Flask application with advanced features.
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
-- [Base Environment Setup](#base-environment-setup)
-- [Python Application](#python-application)
-- [Jenkins Pipeline](#jenkins-pipeline)
-- [Helm Chart](#helm-chart)
-- [Kubernetes Setup](#kubernetes-setup)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Key Features](#key-features)
+- [Components](#components)
+  - [Base Environment](#base-environment)
+  - [Python Application](#python-application)
+  - [Jenkins Pipeline](#jenkins-pipeline)
+  - [Helm Chart](#helm-chart)
+  - [Kubernetes Setup](#kubernetes-setup)
 - [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [Usage](#usage)
+- [Workflow](#workflow)
+- [Directory Structure](#directory-structure)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
----
+## Overview
 
-## Project Overview
+This project showcases a complete CI/CD pipeline that automates the software development lifecycle from code commit to production deployment. By leveraging Docker Compose, Jenkins, GitLab, Nexus, and Kubernetes, the project provides a scalable, maintainable, and secure solution for continuous delivery of a Python Flask application.
 
-This project streamlines and automates the process of building, testing, packaging, and deploying a Python Flask application. By leveraging Docker Compose, Jenkins, Nexus, GitLab, and Kubernetes, the project offers a robust CI/CD solution that is both scalable and maintainable.
+The pipeline handles code quality checks, security scans, artifact management, version control, and Kubernetes deployment, demonstrating best practices in modern DevOps workflows.
 
----
+## Architecture
 
-## Base Environment Setup
+![Architecture Diagram](https://via.placeholder.com/800x400?text=CI/CD+Pipeline+Architecture)
 
-The foundation of the project is built using **Docker Compose**. The environment includes:
+The architecture consists of the following main components:
 
-- **Jenkins:** Automates builds and pipelines (running on port `8081`).
-- **Nexus:** Serves as the artifact repository for built binaries.
-- **GitLab:** Hosts the source code and triggers the CI/CD pipeline (accessible at `http://gitlab.local:8080`).
+1. **Development Environment**: Dockerized services for local development
+2. **Source Control**: GitLab for version control and code hosting
+3. **CI/CD Server**: Jenkins for pipeline automation
+4. **Artifact Repository**: Nexus for storing build artifacts
+5. **Deployment Target**: Kubernetes (K3s) for container orchestration
 
-**Setup Steps:**
+The workflow follows a typical CI/CD pattern:
+- Code changes are pushed to GitLab
+- Jenkins detects changes and triggers the pipeline
+- Tests, code quality, and security checks are performed
+- Application is built and packaged as a binary
+- Binary is stored in Nexus with version control
+- Helm deploys the application to Kubernetes
 
-1. **Clone the repository.**
-2. **Launch the environment:**  
-   ```bash
-   docker-compose up -d
-   ```
-3. **Verify Services:**
-   - Jenkins: [http://localhost:8081](http://localhost:8081)
-   - GitLab: [http://gitlab.local:8080](http://gitlab.local:8080)
-   - Nexus: (check your configured port)
+## Key Features
 
----
+- **Complete CI/CD Automation**: End-to-end pipeline from code commit to deployment
+- **Containerized Development Environment**: Docker Compose setup for all services
+- **Advanced Flask Application**: Features rate limiting and versioning
+- **Comprehensive Testing**: Automated tests for functionality and security
+- **Code Quality Enforcement**: Static analysis with Ruff and security scanning with Bandit
+- **Artifact Management**: Versioned storage of binaries in Nexus
+- **Automated Versioning**: Timestamp-based versioning with Git tags
+- **Kubernetes Deployment**: Helm charts for declarative application deployment
+- **GitLab Integration**: Merge requests, status updates, and webhook triggers
+- **Notification System**: Build status notifications via Telegram
 
-## Python Application
+## Components
 
-The core application is a Flask-based service that exposes two endpoints:
+### Base Environment
 
-- **Greeting Endpoint (`/`):**  
-  Returns a JSON message:  
-  > "Hello, my name is *...* the time is *xx:yy*"
+The foundation of the project is a Docker Compose environment that includes:
 
-- **Health Check Endpoint (`/health`):**  
-  Provides a simple response with a `200 OK` status for monitoring purposes.
+- **Jenkins**: Automation server running on port `8081`
+- **GitLab**: Version control platform accessible at `http://gitlab.local:8080`
+- **Nexus**: Artifact repository to store build artifacts on port `8082`
 
-**Key Features:**
+This containerized setup ensures consistency across environments and simplifies development.
 
-- **Containerization:**  
-  The application is containerized using a `Dockerfile` and stored in the GitLab repository named **"app-flask"**.
+### Python Application
 
-- **Development:**  
-  Written in Python, the app uses Flask to serve endpoints and dynamically generates responses based on environment variables.
+A Flask-based microservice with:
 
----
+- **Greeting Endpoint (`/`)**: Returns a customizable message with agent name, version, and time
+- **Health Check Endpoint (`/health`)**: For monitoring and liveness probes
+- **Global Rate Limiting**: Protection against DoS with 100 requests per minute limit
+- **Version Management**: Dynamic version information included in responses
 
-## Jenkins Pipeline
+The application follows a modular architecture with:
+- Application factory pattern
+- Blueprint-based routing
+- Environment-specific configuration
+- Comprehensive error handling
 
-The Jenkins Pipeline automates the following steps:
+### Jenkins Pipeline
 
-1. **Dependency Installation:**  
-   Installs required Python packages along with PyInstaller.
+A sophisticated CI/CD pipeline that:
 
-2. **Testing:**  
-   Executes a test suite (located in `test/test_app.py`) that validates the health-check endpoint.
+1. **Runs Tests**: Executes pytest test suite for application verification
+2. **Performs Code Quality Checks**: Uses Ruff for static analysis
+3. **Conducts Security Scanning**: Employs Bandit for security vulnerability detection
+4. **Builds the Application**: Packages the Flask app as a standalone binary using PyInstaller
+5. **Uploads Artifacts**: Stores binaries in Nexus with both `latest` and timestamped versions
+6. **Updates Version Information**: Updates version tags in the code and repository
+7. **Creates Git Tags**: Adds timestamp-based version tags to the repository
+8. **Generates Merge Requests**: Creates merge requests to the main branch
+9. **Updates GitLab Status**: Provides real-time build status in GitLab UI
+10. **Sends Notifications**: Delivers build status via Telegram
 
-3. **Building the Executable:**  
-   Uses **PyInstaller** to convert the Python application into a standalone binary, outputting to the `dist` folder.
+The pipeline is defined in a Jenkinsfile with modular utility functions and supports configuration via parameters or `jenkins-config.yml`.
 
-4. **Artifact Upload:**  
-   Uploads the contents of the `dist` folder to a Nexus **RAW repository**.
+### Helm Chart
 
-5. **Trigger Mechanism:**  
-   The pipeline is configured to run automatically when changes are pushed to the **"app-flask"** GitLab repository, and it can also be triggered manually through Jenkins.
+A Kubernetes deployment solution that:
 
-**Sample Jenkinsfile:**
+- **Configures Deployments**: Manages replica count and environment variables
+- **Handles Service Exposure**: Exposes the application via NodePort
+- **Supports Version Selection**: Deploys specific application versions
+- **Implements Health Monitoring**: Configures liveness probes
+- **Manages Environment Variables**: Passes configuration to the application
+- **Downloads from Nexus**: Fetches the appropriate binary version at startup
 
-```groovy
-pipeline {
-    agent any
+The chart is designed for flexibility, allowing customization through `values.yaml`.
 
-    stages {
-        stage('Install Dependencies') {
-            steps {
-                echo "Installing Python packages and PyInstaller..."
-                sh 'pip install -r requirements.txt'
-                sh 'pip install pyinstaller'
-            }
-        }
-        stage('Run Tests') {
-            steps {
-                echo "Running tests..."
-                sh 'python test/test_app.py'
-            }
-        }
-        stage('Build Executable') {
-            steps {
-                echo "Building executable using PyInstaller..."
-                sh 'pyinstaller --onefile app.py'
-            }
-        }
-        stage('Upload Artifacts') {
-            steps {
-                echo "Uploading build artifacts to Nexus..."
-                // Customize this command to use your Nexus CLI or script
-                sh './upload_to_nexus.sh'
-            }
-        }
-    }
-}
-```
+### Kubernetes Setup
 
----
+A lightweight Kubernetes deployment using:
 
-## Helm Chart
-
-The Helm Chart is designed for manual deployments of the application on a Kubernetes cluster. It offers:
-
-- **Configurable `values.yaml`:**
-  - **`replicaCount`**: Define the number of deployment replicas.
-  - **`agentName`**: Customizes the greeting message by replacing the *"..."* placeholder.
-
-- **Liveness Probe:**  
-  Configured to monitor the `/health` endpoint, ensuring the application is running as expected.
-
-- **Deployment Process:**  
-  On deployment, the application downloads the binary from Nexus and executes it.
-
-**Deployment Command Example:**
-
-```bash
-helm install app-flask ./helm-chart -f values.yaml
-```
-
----
-
-## Kubernetes Setup
-
-Deploy the application using your preferred Kubernetes environment:
-
-- **K3s:** Lightweight production-grade Kubernetes.
-- **Docker Desktop:** Integrated Kubernetes for local development.
-- **Minikube:** A local Kubernetes cluster for testing.
-
-**Steps to Deploy:**
-
-1. **Setup your Kubernetes cluster** (K3s, Docker Desktop, or Minikube).
-2. **Configure `kubectl`** to connect to your cluster.
-3. **Deploy using Helm:**  
-   ```bash
-   helm install app-flask ./helm-chart -f values.yaml
-   ```
-4. **Monitor Deployment:**  
-   Ensure that the liveness probe successfully checks the `/health` endpoint.
-
----
+- **K3s**: A certified Kubernetes distribution that's lightweight and easy to install
+- **Headless Services**: Connect to external resources like Nexus
+- **Custom Endpoints**: Map to host machine services
+- **Namespaces**: Organize resources by functionality
 
 ## Getting Started
 
-1. **Clone the Repository:**
+### Prerequisites
+
+- Docker and Docker Compose
+- Git
+- Kubernetes cluster (K3s, Minikube, or Docker Desktop Kubernetes)
+- kubectl CLI
+- Helm
+
+### Installation
+
+1. Clone the repository:
    ```bash
-   git clone http://gitlab.local:8080/pipeline-project-group/app-flask.git
-   cd app-flask
+   git clone https://github.com/yourusername/basic-ci-cd.git
+   cd basic-ci-cd
    ```
 
-2. **Start Base Services:**
+2. Start the base environment:
    ```bash
-   docker-compose up -d
+   make all
    ```
 
-3. **Configure Jenkins:**
-   - Create a pipeline job in Jenkins pointing to the GitLab repository.
-   - Set up a GitLab webhook to trigger builds on push events.
+3. Configure GitLab:
+   - Access GitLab at http://gitlab.local:8080
+   - Set up a user and create a project
+   - Configure webhooks for Jenkins integration
 
-4. **Deploy to Kubernetes:**
-   - Update the `values.yaml` file as needed.
-   - Deploy using the Helm chart:
-     ```bash
-     helm install app-flask ./helm-chart -f values.yaml
-     ```
+4. Configure Jenkins:
+   - Access Jenkins at http://localhost:8081
+   - Install suggested plugins
+   - Configure GitLab and Nexus credentials
+   - Set up pipeline job pointing to Jenkinsfile
 
----
+5. Configure Nexus:
+   - Access Nexus at http://localhost:8082
+   - Create RAW repository for storing artifacts
 
-## Project Structure
+6. Configure Kubernetes:
+   ```bash
+   kubectl create namespace nexus
+   kubectl apply -f k3s/service/nexus-headless-service.yaml
+   kubectl apply -f k3s/service/nexus-headless-endpoint.yaml
+   ```
+
+### Configuration
+
+1. Update the IP address in `k3s/service/nexus-headless-endpoint.yaml` to your host machine's IP
+
+2. Configure environment-specific settings in `values.yaml`:
+   ```yaml
+   appVersion: "latest"
+   flaskEnv: "development"
+   replicaCount: 2
+   agentName: "default Agent"
+   nodePort: 30080
+   ```
+
+3. Adjust pipeline behavior in `jenkins-config.yml`:
+   ```yaml
+   runTests: true
+   runRuffCheck: true
+   runBanditCheck: true
+   updateVersion: true
+   buildExecutable: true
+   # Additional options...
+   ```
+
+## Usage
+
+### Triggering the Pipeline
+
+1. Push changes to the GitLab repository:
+   ```bash
+   git add .
+   git commit -m "Update application code"
+   git push origin main
+   ```
+
+2. Monitor the pipeline in Jenkins at http://localhost:8081
+
+3. View build status in the GitLab UI
+
+### Deploying the Application
+
+1. Deploy using Helm:
+   ```bash
+   helm install appflask ./helm/flask-app
+   ```
+
+2. Deploy a specific version:
+   ```bash
+   helm install appflask ./helm/flask-app --set appVersion=20240317123456
+   ```
+
+3. Verify the deployment:
+   ```bash
+   kubectl get pods
+   kubectl get svc
+   ```
+
+4. Test the application:
+   ```bash
+   curl http://<NODE_IP>:30080/
+   curl http://<NODE_IP>:30080/health
+   ```
+
+## Workflow
+
+The typical workflow in this environment:
+
+1. Developer pushes code changes to GitLab
+2. GitLab webhook triggers Jenkins pipeline
+3. Jenkins runs tests, quality checks, and security scans
+4. If checks pass, Jenkins builds the application
+5. Binary is uploaded to Nexus with version information
+6. Version information is updated in Git repo and tagged
+7. Optionally, a merge request is created
+8. DevOps deploys application using Helm
+9. Helm pulls appropriate binary version from Nexus
+10. Application runs in Kubernetes with specified configuration
+
+## Directory Structure
 
 ```
-.
-├── Docs
-│   └── Technologies
-│       ├── GitLab
-│       │   └── GitLab.md
-│       ├── Jenkins
-│       │   └── Jenkins.md
-│       └── Nexus
-│           └── Nexus.md
-├── flask-app
-│   ├── Dockerfile
-│   ├── Jenkinsfile
-│   ├── README.md
-│   └── srcs
-│       ├── __init__.py
-│       ├── main
-│       │   └── app.py
-│       ├── requirements.txt
-│       └── tests
-│           ├── __init__.py
-│           └── test_app.py
-├── helm
-│   ├── flask-app
-│   │   ├── Chart.yaml
-│   │   ├── templates
-│   │   │   ├── configmap.yaml
-│   │   │   ├── deployment.yaml
-│   │   │   └── service.yaml
-│   │   └── values.yaml
-│   └── README.md
-├── k3s
-│   └── service
-│       ├── nexus-headless-endpoint.yaml
-│       └── nexus-headless-service.yaml
-├── Makefile
-├── Progress.md
-├── README.md
-├── srcs
-│   ├── docker-compose.yaml
-│   └── requirements
-│       ├── GitLab
-│       │   └── Dockerfile
-│       ├── Jenkins
-│       │   ├── conf
-│       │   │   └── plugins.txt
-│       │   └── Dockerfile
-│       └── Nexus
-│           └── Dockerfile
-├── subject.txt
-├── TODO
-└── Workflow.md
-
-21 directories, 30 files
+basic-ci-cd/
+├── Docs/                         # Documentation files
+│   ├── Technologies/             # Tool-specific documentation
+│   │   ├── GitLab/
+│   │   ├── Jenkins/
+│   │   └── Nexus/
+│   ├── progresses/               # Project progress tracking
+│   ├── subjects/                 # Project requirements
+│   └── workflows/                # Workflow documentation
+├── flask-app/                    # Flask application source
+│   ├── agent/                    # Jenkins agent configuration
+│   ├── includes/                 # Pipeline utility functions
+│   ├── srcs/                     # Application source code
+│   │   ├── main/                 # Core application modules
+│   │   └── tests/                # Test suites
+│   ├── Jenkinsfile               # CI/CD pipeline definition
+│   └── version.info              # Application version file
+├── helm/                         # Kubernetes Helm charts
+│   ├── flask-app/                # AppFlask chart
+│   │   ├── templates/            # Kubernetes resource templates
+│   │   ├── Chart.yaml            # Chart metadata
+│   │   └── values.yaml           # Configurable values
+│   └── README.md                 # Helm documentation
+├── k3s/                          # Kubernetes configurations
+│   └── service/                  # Service definitions
+├── srcs/                         # Docker environment files
+│   ├── docker-compose.yaml       # Service composition
+│   └── requirements/             # Service-specific files
+│       ├── GitLab/
+│       ├── Jenkins/
+│       └── Nexus/
+├── Makefile                      # Build automation
+├── README.md                     # Project documentation
+└── .gitignore                    # Git exclusion patterns
 ```
 
----
+## Documentation
+
+Comprehensive documentation is available in the `Docs` directory:
+
+- **Technologies**: Detailed documentation for each tool
+- **Workflows**: Pipeline and process documentation
+- **Subjects**: Original project requirements
+- **Progress**: Development history and milestones
+
+Additional documentation:
+- **Helm README**: Instructions for deploying with Helm
+- **Flask App README**: Details of the application architecture and features
+- **Jenkinsfile**: Commented pipeline stages and configurations
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository, submit issues, and open pull requests. Ensure that your contributions adhere to the coding standards and include relevant tests.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
----
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-Thank you for checking out the **CI/CD Pipeline Project**. If you have any questions or need further assistance, feel free to open an issue or contact the project maintainers.
+Developed with ❤️ by [Your Name/Team]

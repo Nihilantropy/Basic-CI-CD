@@ -85,3 +85,15 @@
 ### Added timeout control
 
 ### Studied Jenkins functionality
+
+---
+
+# Day 5
+
+### Corrected a pyinstaller problem (submodules import)
+
+### Setup helm in order to utilize the nexus binary version of the app
+
+### ALL WORKS!
+
+### Next: find a way to autodeploy helm chart on new app release
