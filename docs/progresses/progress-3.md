@@ -1,5 +1,7 @@
 # Day 1
 
+## Phase 1
+
 ## Planning & Strategy Phase
 
 ### Requirements Analysis (Completed)
@@ -28,3 +30,33 @@
 - Defined core metrics implementation for requests, rate limiting, and application statistics
 - Specified Jenkins monitoring approach with Prometheus Metrics Plugin
 - Created comprehensive dashboard requirements and visualization strategy
+
+## Phase 2
+
+## Environment Enhancement Phase
+
+### Docker Compose Configuration (Completed)
+
+- Added Prometheus service to Docker Compose with:
+  - Official Prometheus image with proper configuration
+  - Persistent volume storage for time-series data
+  - Default scraping configuration for services
+  - Custom retention settings (15 days)
+  - Web interface access on port 9090
+
+- Added Grafana service to Docker Compose with:
+  - Official Grafana image configured for our environment
+  - Environment variables stored securely in .env file
+  - Persistent volume for dashboard configurations
+  - Provisioned data sources for Prometheus
+  - Web interface access on port 3000
+
+- Set up proper networking between services:
+  - Connected monitoring services to existing gitlab_network
+  - Ensured all services can communicate with each other
+  - Maintained isolation where appropriate
+
+- Updated Makefile to include:
+  - New services in the PROJECT_SERVICES list
+  - Additional volumes in the PROJECT_VOLUMES list
+  - Consistent build and management commands

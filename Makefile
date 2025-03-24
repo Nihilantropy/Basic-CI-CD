@@ -10,7 +10,9 @@ TAG = 0.1.0
 PROJECT_SERVICES = gitlab \
                    jenkins-docker \
                    jenkins \
-                   nexus
+                   nexus \
+				   prometheus \
+				   grafana
 
 # List of CI/CD volumes and networks as defined in docker-compose.yml
 PROJECT_VOLUMES = gitlab_data \
@@ -18,7 +20,10 @@ PROJECT_VOLUMES = gitlab_data \
                    gitlab_config \
                    jenkins_home \
 				   jenkins-docker-certs \
-                   nexus_data
+                   nexus_data \
+				   prometheus_data \
+				   grafana_data
+
 PROJECT_NETWORKS = $(FOLDER_PREFIX)gitlab_network
 
 all: setup images up show
