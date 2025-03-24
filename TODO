@@ -1,0 +1,5 @@
+Add /metrics endpoint to appflask with python library for metrics
+
+Add 2 containers to docker-compose
+	- [ ] Prometheus
+	- [ ] Grafana
