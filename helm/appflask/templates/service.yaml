@@ -11,3 +11,7 @@ spec:
     - port: 5000
       targetPort: 5000
       nodePort: {{ .Values.nodePort }}
+      name: http
+    - port: 5000
+      targetPort: 5000
+      name: metrics

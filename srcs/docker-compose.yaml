@@ -84,7 +84,7 @@ services:
   ### PROMETHEUS ###
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.2.1
     restart: always
     ports:
       - "9090:9090"
@@ -104,13 +104,15 @@ services:
 ### GRAFANA ###
   grafana:
     container_name: grafana
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.2-ubuntu
     restart: always
     ports:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./requirements/Grafana/provisioning:/etc/grafana/provisioning
+      - ./requirements/Grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./requirements/Grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./requirements/Grafana/provisioning/dashboards/json:/etc/grafana/provisioning/dashboards/json
     env_file:
       - ./requirements/Grafana/.env
     networks:
