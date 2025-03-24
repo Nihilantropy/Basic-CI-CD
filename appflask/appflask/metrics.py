@@ -169,6 +169,9 @@ class MetricsCollector:
         response = Response(metrics_data)
         response.headers['Content-Type'] = CONTENT_TYPE_LATEST
         
+        for metric in CUSTOM_REGISTRY.collect():
+            logger.debug("Registered metric: %s", metric.name)
+        
         return response
 
 
