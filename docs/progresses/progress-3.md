@@ -20,3 +20,11 @@
 - Developed component architecture diagram showing integration with existing CI/CD services
 - Specified Prometheus configuration for scraping both Flask application and Jenkins metrics
 - Defined security model for monitoring infrastructure
+
+### Tool Selection & Strategy (Completed)
+
+- Selected Prometheus as primary metrics collection platform with detailed integration approach
+- Developed Flask application metrics strategy using prometheus-client library
+- Defined core metrics implementation for requests, rate limiting, and application statistics
+- Specified Jenkins monitoring approach with Prometheus Metrics Plugin
+- Created comprehensive dashboard requirements and visualization strategy
