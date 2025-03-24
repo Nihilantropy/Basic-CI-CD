@@ -1,3 +1,4 @@
+# appflask/app.py
 """Flask application main module.
 
 This module contains the application factory and startup code for the Flask app,
@@ -9,10 +10,11 @@ import logging
 from flask import Flask
 
 # Import our custom modules
-from srcs.main.config import get_config
-from srcs.main.errors import register_error_handlers
-from srcs.main.limiter import RateLimiterFactory
-from srcs.main.routes import main_blueprint
+from appflask.config import get_config
+from appflask.errors import register_error_handlers
+from appflask.limiter import RateLimiterFactory
+from appflask.metrics import metrics
+from appflask.routes import main_blueprint
 
 
 def create_app() -> Flask:
@@ -20,7 +22,6 @@ def create_app() -> Flask:
 
     Returns:
         Flask: Configured Flask application
-
     """
     app = Flask(__name__)
 
@@ -39,6 +40,10 @@ def create_app() -> Flask:
 
     # Register error handlers
     register_error_handlers(app)
+
+    # Initialize metrics collection
+    metrics.init_app(app)
+    app.logger.debug("Metrics collection initialized")
 
     # Register blueprints
     app.register_blueprint(main_blueprint)

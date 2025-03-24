@@ -21,7 +21,7 @@ def client():
     os.environ["FLASK_ENV"] = "testing"
 
     # Import the app factory function
-    from srcs.main.app import create_app
+    from appflask.app import create_app
 
     # Create app with test configuration
     app = create_app()

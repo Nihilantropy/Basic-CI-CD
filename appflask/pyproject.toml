@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "B", "I", "N", "UP", "ANN", "S", "A", "C4", "RET", "SIM", "ARG", "ERA", "PL", "RUF"]
+ignore = ["ANN101", "ANN102", "PLR0913"]
+target-version = "py39"

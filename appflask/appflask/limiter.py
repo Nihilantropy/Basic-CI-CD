@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from flask_limiter import Limiter
 
-from .config import get_config
+from appflask.config import get_config
 
 if TYPE_CHECKING:
     from flask import Flask

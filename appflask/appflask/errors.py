@@ -10,7 +10,7 @@ from typing import TypeVar
 
 from flask import Flask, Response, jsonify, make_response
 
-from .config import get_config
+from appflask.config import get_config
 
 # Get application configuration
 config = get_config()

@@ -241,15 +241,7 @@ pipeline {
                             find srcs -type f -name "*.py" | sort
                             
                             # Run PyInstaller with optimized settings
-                            /app/venv/bin/pyinstaller --clean --onefile main.py --name ${ARTIFACT_ID} \
-                                --add-data "srcs:srcs" \
-                                --hidden-import="srcs" \
-                                --hidden-import="srcs.main" \
-                                --hidden-import="srcs.main.config" \
-                                --hidden-import="srcs.main.routes" \
-                                --hidden-import="srcs.main.errors" \
-                                --hidden-import="srcs.main.limiter" \
-                                --hidden-import="srcs.main.version"
+                            /app/venv/bin/pyinstaller --clean --onefile main.py --name ${ARTIFACT_ID}
                             
                             # Verify the binary exists
                             ls -la dist/

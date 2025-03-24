@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, Response, jsonify
 
 # Import the global version variable
-from .version import get_version
+from appflask.version import get_version
 
 # Create a blueprint for the routes
 main_blueprint = Blueprint("main", __name__)
