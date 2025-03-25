@@ -1,3 +1,4 @@
+# srcs/requirements/Prometheus/prometheus.yml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -20,15 +21,17 @@ scrape_configs:
       password: "${JENKINS_PASS}"
     static_configs:
       - targets: ['jenkins:8080']
-
-  # To be updated when Flask app in Kubernetes exposes metrics
-  - job_name: 'flask-app'
-    kubernetes_sd_configs:
-      - role: pod
-    relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_app]
-        regex: .*flask.*
+    metric_relabel_configs:
+      # Add relabelings for Jenkins metrics
+      - source_labels: [__name__]
+        regex: jenkins_(.+)
+        target_label: jenkins_metric
+        replacement: $1
+      # Keep metrics for build duration
+      - source_labels: [__name__]
+        regex: jenkins_job_building_duration_milliseconds.*
         action: keep
-      - source_labels: [__meta_kubernetes_pod_container_port_name]
-        regex: metrics
+      # Keep metrics for queue time
+      - source_labels: [__name__]
+        regex: jenkins_queue_waiting_time_milliseconds.*
         action: keep

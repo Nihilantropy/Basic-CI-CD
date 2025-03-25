@@ -2,7 +2,6 @@
 
 // Helper function to update GitLab status
 def updateGitLabStatus(String name, String state) {
-
     def enableUpdates = env.DO_ENABLE_GITLAB_STATUS?.toBoolean() ?: false
 
     if (enableUpdates) {
@@ -42,30 +41,205 @@ def sendTelegramMessage(String message) {
     }
 }
 
-// Helper function to execute a stage with proper error handling
-def runStage(String stageName, String notificationMessage, Closure stageBody) {
+// Initialize metrics collection for the build
+def initMetrics() {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        echo "Metrics collection disabled. Skipping metrics initialization."
+        return
+    }
+    
+    // Record build start time - used for duration calculation
+    env.METRICS_BUILD_START_TIME = System.currentTimeMillis()
+    
+    // Record some metadata about the build
+    env.METRICS_BUILD_ID = "${env.JOB_NAME.replaceAll('[^a-zA-Z0-9_]', '_')}_${env.BUILD_NUMBER}"
+    
+    // Track stages and their timings - use empty JSON array
+    env.METRICS_STAGES = "[]" 
+    
+    echo "Metrics initialized for build: ${env.METRICS_BUILD_ID}"
+    
+    // Record build start in Prometheus format
+    prometheusMetric("jenkins_pipeline_started_total", "counter", 1, ["job": env.JOB_NAME, "build": env.BUILD_NUMBER])
+}
 
-    updateGitLabStatus(stageName, 'running')
+// Helper function to output metric in Prometheus format
+def prometheusMetric(String name, String type, def value, Map<String,String> labels = [:]) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    def labelStr = labels.collect { k, v -> 
+        "${k}=\"${v.toString().replace('\\', '\\\\').replace('"', '\\"')}\""
+    }.join(',')
+    
+    echo "PROMETHEUS_METRIC ${name}{${labelStr}} ${value.toString()}"
+}
+
+// Finalize metrics collection at the end of the build
+def finalizeMetrics(String result) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        echo "Metrics collection disabled. Skipping metrics finalization."
+        return
+    }
+    
+    def buildEndTime = System.currentTimeMillis()
+    def buildDuration = buildEndTime - (env.METRICS_BUILD_START_TIME as Long)
+    
+    // Record build result metrics
+    prometheusMetric(
+        "jenkins_pipeline_completed_total", 
+        "counter", 
+        1, 
+        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "result": result]
+    )
+    
+    // Record build duration
+    prometheusMetric(
+        "jenkins_pipeline_duration_milliseconds", 
+        "gauge", 
+        buildDuration, 
+        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER]
+    )
+    
+    // Log stages summary if any were recorded
     try {
-        notify("Jenkins: ${notificationMessage}")
-        stageBody()
-        updateGitLabStatus(stageName, 'success')
-        notify("Jenkins: ${stageName} completed successfully ✅")
+        def stages = readJSON text: env.METRICS_STAGES
+        if (stages.size() > 0) {
+            echo "Stage performance summary:"
+            stages.each { stage ->
+                echo "- ${stage.name}: ${stage.duration}ms"
+                
+                // Record individual stage metrics
+                prometheusMetric(
+                    "jenkins_pipeline_stage_duration_milliseconds", 
+                    "gauge", 
+                    stage.duration, 
+                    ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stage.name]
+                )
+            }
+        }
     } catch (Exception e) {
+        echo "Error summarizing stage metrics: ${e.getMessage()}"
+    }
+    
+    echo "Build metrics finalized for: ${env.METRICS_BUILD_ID}"
+}
+
+// Enhanced runStage function with built-in metrics collection
+def runStage(String stageName, String notificationMessage, Closure stageBody) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def stageStartTime = 0
+    
+    // Conditionally record stage start
+    if (enableMetrics) {
+        stageStartTime = System.currentTimeMillis()
+        prometheusMetric(
+            "jenkins_pipeline_stage_started_total", 
+            "counter", 
+            1, 
+            ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
+        )
+    }
+    
+    // Update GitLab status
+    updateGitLabStatus(stageName, 'running')
+    
+    try {
+        // Send notification
+        notify("Jenkins: ${notificationMessage}")
+        
+        // Execute the stage body
+        stageBody()
+        
+        // Conditionally record stage success
+        if (enableMetrics) {
+            def stageDuration = System.currentTimeMillis() - stageStartTime
+            recordStageCompletion(stageName, stageDuration, true)
+        }
+        
+        // Update GitLab status
+        updateGitLabStatus(stageName, 'success')
+        
+        // Send success notification
+        notify("Jenkins: ${stageName} completed successfully ✅")
+        
+    } catch (Exception e) {
+        // Conditionally record stage failure
+        if (enableMetrics) {
+            def stageDuration = System.currentTimeMillis() - stageStartTime
+            recordStageCompletion(stageName, stageDuration, false)
+        }
+        
+        // Update GitLab status for failure
         updateGitLabStatus(stageName, 'failed')
+        
+        // Format error message
         def errorLog = e.getMessage()
         notify("Jenkins: ${stageName} failed ❌\n${errorLog}")
+        
+        // Rethrow the exception to ensure the pipeline fails
         error "${stageName} failed. Pipeline interrupted."
     }
 }
 
+// Helper function to record stage completion
+def recordStageCompletion(String stageName, long duration, boolean success) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Record stage completion metrics
+    prometheusMetric(
+        "jenkins_pipeline_stage_completed_total", 
+        "counter", 
+        1, 
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER, 
+            "stage": stageName, 
+            "result": success ? "success" : "failure"
+        ]
+    )
+    
+    // Record stage duration
+    prometheusMetric(
+        "jenkins_pipeline_stage_duration_milliseconds", 
+        "gauge", 
+        duration, 
+        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
+    )
+    
+    // Store stage metrics in our stages array
+    try {
+        def stages = readJSON text: env.METRICS_STAGES
+        stages.add([
+            name: stageName,
+            duration: duration,
+            success: success
+        ])
+        env.METRICS_STAGES = writeJSON(json: stages, returnText: true)
+    } catch (Exception e) {
+        echo "Error recording stage metrics: ${e.getMessage()}"
+    }
+}
+
+// Other utility functions from the original file...
 def updateVersionInfo() {
     echo "Updating version info and committing changes..."
     
     def timestamp = env.TIMESTAMP
     def gitBranch = env.GIT_BRANCH
 
-    // Add and commit version-related changes - no sensitive data here, can use string interpolation
+    // Add and commit version-related changes
     sh """
         git add version.info
         git commit -m "Update version to ${timestamp} [ci skip]"
@@ -84,13 +258,11 @@ def createReleaseTag() {
     echo "Creating and pushing release tag..."
     
     def timestamp = env.TIMESTAMP
-    // Create tag - no sensitive data here
     sh """
         # Create tag with proper syntax
         git tag -a ${timestamp} -m "Release ${timestamp}"
     """
     
-    // For GitLab, use oauth2 as the username with the token
     withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
         sh """
             git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git refs/tags/${timestamp}
@@ -100,7 +272,6 @@ def createReleaseTag() {
     echo "Release tag ${timestamp} created and pushed"
 }
 
-// Helper function to create a merge request
 def createMergeRequest(String gitLabHost, String projectPath, String sourceBranch, String targetBranch, String title, String description) {
     echo "Creating merge request from ${sourceBranch} to ${targetBranch}..."
     
@@ -108,9 +279,7 @@ def createMergeRequest(String gitLabHost, String projectPath, String sourceBranc
     def encodedTitle = URLEncoder.encode(title, "UTF-8")
     def encodedDescription = URLEncoder.encode(description, "UTF-8")
     
-    // Use withCredentials to securely access the token
     withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
-        // Using curl with single quotes to prevent token exposure in logs
         def response = sh(script: '''
             curl -s -X POST \
             -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \

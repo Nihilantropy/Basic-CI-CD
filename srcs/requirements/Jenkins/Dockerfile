@@ -17,9 +17,13 @@ RUN apt-get update && apt-get install -y docker-ce-cli
 
 # Create directory for plugins list
 RUN mkdir -p /usr/share/jenkins/ref/conf
-
 # Copy plugins.txt to appropriate directory
 COPY conf/plugins.txt /usr/share/jenkins/ref/conf/plugins.txt
+
+# Create init scripts directory
+RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d/
+COPY init_scripts/*.groovy /usr/share/jenkins/ref/init.groovy.d/
+
 
 USER jenkins
 
