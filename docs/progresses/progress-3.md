@@ -86,9 +86,9 @@
   - Implemented tests for service connectivity
   - Added debugging for network resolution issues
   - Verified proper authentication mechanisms
-  
-- Troubleshot and resolved initial configuration issues:
-  - Fixed HTTP status code validation for redirecting endpoints
-  - Addressed container networking and DNS resolution
-  - Implemented improved target configuration for reliability
-  - Added detailed logging for monitoring troubleshooting
+
+## Phase 3
+
+### metrics endpoint for appflask (completed)
+
+### metrics endpoitn unit tests (completed)
