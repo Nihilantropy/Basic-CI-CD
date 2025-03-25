@@ -22,6 +22,12 @@ blueocean-git-pipeline:latest
 blueocean-pipeline-api-impl:latest
 blueocean-web:latest
 
+# Prometheus and metrics plugins
+prometheus:latest
+metrics:latest
+metrics-diskusage:latest
+build-metrics:latest
+
 # Build triggers
 build-timeout:latest
 timestamper:latest
