@@ -1,4 +1,3 @@
-# srcs/requirements/Prometheus/prometheus.yml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -16,6 +15,9 @@ scrape_configs:
 
   - job_name: 'jenkins'
     metrics_path: '/prometheus'
+    basic_auth:
+      username: "${JENKINS_USER}"
+      password: "${JENKINS_PASS}"
     static_configs:
       - targets: ['jenkins:8080']
 
