@@ -86,4 +86,9 @@
   - Implemented tests for service connectivity
   - Added debugging for network resolution issues
   - Verified proper authentication mechanisms
-  
+
+## Phase 3
+
+### metrics endpoint for appflask (completed)
+
+### metrics endpoitn unit tests (completed)
