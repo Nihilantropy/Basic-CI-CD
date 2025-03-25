@@ -84,7 +84,10 @@ services:
   ### PROMETHEUS ###
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:v3.2.1
+    build:
+      context: ./requirements/Prometheus
+      dockerfile: Dockerfile
+    image: my_prometheus:0.1.0
     restart: always
     ports:
       - "9090:9090"
@@ -104,7 +107,10 @@ services:
 ### GRAFANA ###
   grafana:
     container_name: grafana
-    image: grafana/grafana:11.5.2-ubuntu
+    build:
+      context: ./requirements/Grafana
+      dockerfile: Dockerfile
+    image: my_grafana:0.1.0
     restart: always
     ports:
       - "3000:3000"
