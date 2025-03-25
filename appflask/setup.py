@@ -1,7 +1,13 @@
-from setuptools import setup, find_packages
+"""Setup script for the appflask package.
+
+This script installs the appflask package and its dependencies.
+"""
+from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read version from file
-with open('version.info', 'r') as f:
+with Path("version.info").open() as f:
     version = f.read().strip()
 
 setup(

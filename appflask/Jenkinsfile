@@ -159,7 +159,7 @@ pipeline {
                     utils.runStage('tests', 'Running tests with pytest... 🧪') {
                         sh '''
                         . /app/venv/bin/activate
-                        python -m pytest srcs/tests --maxfail=1 --disable-warnings -v
+                        python -m pytest tests/ --maxfail=1 --disable-warnings -v
                         '''
                     }
                 }

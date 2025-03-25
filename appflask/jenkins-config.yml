@@ -8,9 +8,9 @@ runBanditCheck: true
 updateVersion: true
 buildExecutable: true
 archiveExecutable: true
-uploadToNexus: true
-pushGitChanges: true
-createMergeRequest: true
+uploadToNexus: false
+pushGitChanges: false
+createMergeRequest: false
 
 # Integration controls
 enableGitlabStatus: true

@@ -18,27 +18,31 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     """Initialize and run the Flask application."""
     try:
-        # Import the application factory
         from appflask.app import create_app
-
-        # Create the Flask application
         app = create_app()
 
-        # Log configuration details
         flask_env = os.getenv("FLASK_ENV", "development")
         agent_name = os.getenv("AGENT_NAME", "Unknown")
-        logger.info("Starting Flask application: env=%s, agent=%s", flask_env, agent_name)
+        logger.info(
+            "Starting Flask application: env=%s, agent=%s",
+            flask_env,
+            agent_name,
+        )
 
-        # Run the application
-        app.run(host="0.0.0.0", port=5000)  # noqa: S104
+        # Use an environment variable to configure host and port,
+        # defaulting to safe values for non-development environments.
+        host = os.getenv("FLASK_RUN_HOST", "0.0.0.0" if flask_env == "development" else "127.0.0.1")
+        port = int(os.getenv("FLASK_RUN_PORT", "5000"))
+        app.run(host=host, port=port)
 
     except ImportError:
         logger.exception("Import error")
-        logger.error("This may be due to incorrect package structure or missing dependencies")
+        logger.exception("This may be due to incorrect package structure or missing dependencies")
         sys.exit(1)
     except Exception:
         logger.exception("Application failed to start")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
