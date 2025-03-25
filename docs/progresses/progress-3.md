@@ -89,6 +89,50 @@
 
 ## Phase 3
 
-### metrics endpoint for appflask (completed)
+## Flask Application Enhancement Phase
 
-### metrics endpoitn unit tests (completed)
+### Metrics Implementation (Completed)
+
+- Integrated Prometheus client library into the Flask application:
+  - Added prometheus-client to requirements.txt
+  - Created dedicated metrics.py module for centralized metrics management
+  - Implemented custom metrics collector class for application monitoring
+
+- Developed comprehensive metrics collection for the application:
+  - HTTP request counters by endpoint, method, and status code
+  - Request duration histograms for performance tracking
+  - In-flight request gauges for concurrency monitoring
+  - Rate limiting metrics (hit count and remaining capacity)
+  - Application information metrics (version, uptime, start time)
+
+- Implemented the `/metrics` endpoint with standardized Prometheus format:
+  - Created a dedicated endpoint handler in the metrics collector
+  - Configured proper content type and formatting
+  - Used a custom registry for better metrics organization
+  - Implemented uptime tracking that updates on each metrics request
+
+- Enhanced application architecture to support metrics:
+  - Modified application factory to initialize metrics collection
+  - Added before/after request handlers for automatic tracking
+  - Ensured metrics collection has minimal performance impact
+  - Implemented proper logging throughout metrics code
+
+### Testing & Integration (Completed)
+
+- Developed comprehensive test suite for metrics functionality:
+  - Created specific test_metrics.py module for metrics testing
+  - Implemented tests to verify metrics endpoint existence and content type
+  - Added tests to validate metrics format and content
+  - Created tests to ensure metrics increment correctly after requests
+  - Added detailed raw output validation for debugging
+
+- Ensured proper metrics exposure for Prometheus scraping:
+  - Updated Kubernetes deployment template with Prometheus annotations
+  - Added port configuration for metrics scraping
+  - Configured service to expose metrics endpoint
+  - Ensured metrics are available both inside and outside the cluster
+
+- Updated application documentation to reflect metrics capabilities:
+  - Documented available metrics and their meanings
+  - Provided examples of how to query metrics
+  - Added detailed docstrings to all metrics-related code
