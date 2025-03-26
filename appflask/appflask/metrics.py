@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import time
+from http import HTTPStatus
 
 from flask import Flask, Response, request
 from prometheus_client import (
@@ -13,8 +14,6 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
-
-from http import HTTPStatus
 
 # Initialize logger
 logger = logging.getLogger(__name__)

@@ -1,1 +1,1 @@
-"""Main application module."""
+"""Flask application package."""

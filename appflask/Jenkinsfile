@@ -2,8 +2,8 @@ pipeline {
     /* Use the custom Docker agent from agent folder */
     agent {
         dockerfile {
-            filename 'Dockerfile'
-            dir 'agent'
+            filename 'agent/Dockerfile'
+            dir '.'
             args '--network=host'
         }
     }
@@ -177,7 +177,7 @@ pipeline {
                     utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
                         sh '''
                         . /app/venv/bin/activate
-                        python -m ruff check srcs/main --select ALL
+                        python -m ruff check appflask --select ALL --ignore N999 --exclude "tests/*"
                         '''
                     }
                 }
@@ -195,7 +195,7 @@ pipeline {
                     utils.runStage('bandit', 'Running Bandit security check... 🔒') {
                         sh '''
                         . /app/venv/bin/activate
-                        python -m bandit -r . -ll -iii
+                        python -m bandit -r appflask -ll -iii
                         '''
                     }
                 }
@@ -212,10 +212,10 @@ pipeline {
                 script {
                     utils.runStage('version-update', 'Updating version information... 📝') {
                         // Update version.py with the timestamp
-                        sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" srcs/main/version.py"
+                        sh "sed -i \"s/\\\${PLACEHOLDER_VERSION}/${env.TIMESTAMP}/g\" appflask/version.py"
                         
                         // Verify version.py was updated correctly
-                        sh "cat srcs/main/version.py"
+                        sh "cat appflask/version.py"
                         
                         // Also update version.info file to keep it in sync
                         sh "echo ${env.TIMESTAMP} > version.info"

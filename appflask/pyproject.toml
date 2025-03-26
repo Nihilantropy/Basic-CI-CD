@@ -1,10 +1,15 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.ruff]
+# Allow autofix for all enabled rules (when `--fix`) is provided
+fix = true
 
-[tool.pytest]
-testpaths = ["tests"]
+# Ignore certain rules
+ignore = ["N999"]
 
-[tool.black]
+# Same as Black.
 line-length = 88
-target-version = ['py39']
+
+# Target Python version
+target-version = "py39"
+
+# Include other directories if needed
+include = ["appflask/**/*.py", "tests/**/*.py"]

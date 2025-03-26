@@ -20,19 +20,14 @@ RUN python -m venv /app/venv
 # Make sure pip is up-to-date in the virtual environment
 RUN /app/venv/bin/pip install --upgrade pip setuptools wheel
 
-# Install Python dependencies in the virtual environment
-# Notice we're using /app/venv/bin/pip explicitly
-RUN /app/venv/bin/pip install --no-cache-dir \
-    pytest \
-    pyinstaller \
-    ruff \
-    bandit \
-    flask \
-    flask-limiter \
-    requests
+# Copy requirements files
+COPY requirements.txt requirements-dev.txt /app/
+
+# Install both production and development dependencies
+RUN /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt -r /app/requirements-dev.txt
 
 # Make sure the venv is usable by anyone
-RUN chmod -R 755 /app/venv
+RUN chmod -R 777 /app/venv
 
 # Keep the container running
 CMD ["tail", "-f", "/dev/null"]

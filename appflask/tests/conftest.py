@@ -2,8 +2,6 @@
 
 This module provides fixtures and configuration for pytest.
 """
-import os
-import sys
 import pytest
 from appflask.app import create_app
 
