@@ -8,7 +8,6 @@ providing endpoints with global rate limiting functionality.
 import logging
 
 from flask import Flask
-import os
 
 # Import our custom modules
 from appflask.config import get_config
@@ -52,16 +51,5 @@ def create_app() -> Flask:
 
     return app
 
-# Create the Flask application instance
+# Create the Flask application instance for import by other modules
 app = create_app()
-
-if __name__ == "__main__":
-    # Use logger instead of print
-    app.logger.info("We are live!")
-    app.logger.info("Flask application is starting...")
-    # Enhance session security
-    app.config['SESSION_TYPE'] = 'filesystem'  
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32))
-    # For local development only; in production, use a proper WSGI server
-    # S104 issue can be ignored for development, but address in production
-    app.run(host="0.0.0.0", port=5000)  # noqa: S104

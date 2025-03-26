@@ -8,8 +8,8 @@ runBanditCheck: true
 updateVersion: true
 buildExecutable: true
 archiveExecutable: true
-uploadToNexus: false
-pushGitChanges: false
+uploadToNexus: true
+pushGitChanges: true
 createMergeRequest: false
 
 # Integration controls
