@@ -6,9 +6,9 @@ def instance = Jenkins.getInstance()
 def prometheusConfiguration = PrometheusConfiguration.get()
 
 // Configure Prometheus endpoint path
-prometheusConfiguration.setPath("/prometheus")
-prometheusConfiguration.setDefaultNamespace("jenkins")
-prometheusConfiguration.setCollectingMetricsPeriodInSeconds(15)
+prometheusConfiguration.setPath("prometheus")
+prometheusConfiguration.setDefaultNamespace("default")
+prometheusConfiguration.setCollectingMetricsPeriodInSeconds(5)
 prometheusConfiguration.setProcessingDisabledBuilds(false)
 prometheusConfiguration.setPercentiles([50.0d, 95.0d, 99.0d])
 prometheusConfiguration.setUseAuthenticatedEndpoint(true)

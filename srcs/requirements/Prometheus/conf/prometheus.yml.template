@@ -14,7 +14,7 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'jenkins'
-    metrics_path: '/prometheus'
+    metrics_path: '/prometheus/'
     basic_auth:
       username: "JENKINS_USER_PLACEHOLDER"
       password: "JENKINS_PASS_PLACEHOLDER"
