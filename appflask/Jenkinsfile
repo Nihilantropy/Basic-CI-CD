@@ -233,12 +233,16 @@ pipeline {
             steps {
                 script {
                     utils.runStage('build', 'Building executable using PyInstaller... 🔧') {
+
+                        // Inject ARTIFACT_ID into the spec file
+                        sh "sed -i \"s/\\\${PLACEHOLDER_ARTIFACT_ID}/${env.ARTIFACT_ID}/g\" appflask.spec"
+
                         // Run PyInstaller directly using the binary instead of the module
                         sh """
                             . /app/venv/bin/activate
                             
                             # Run PyInstaller with optimized settings
-                            /app/venv/bin/pyinstaller --clean --onefile main.py --name ${ARTIFACT_ID}
+                            /app/venv/bin/pyinstaller appflask.spec
                             
                             # Verify the binary exists
                             ls -la dist/

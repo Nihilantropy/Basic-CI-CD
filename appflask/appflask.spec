@@ -26,7 +26,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='${PLACEHOLDER_ARTIFACT_NAME}',
+    name='${PLACEHOLDER_ARTIFACT_ID}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
