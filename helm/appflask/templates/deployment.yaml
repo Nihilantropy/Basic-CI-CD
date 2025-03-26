@@ -14,9 +14,6 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}
-        prometheus.io/scrape: "true"
-        prometheus.io/path: "/metrics"
-        prometheus.io/port: "5000"
     spec:
       containers:
         - name: {{ .Release.Name }}
@@ -33,9 +30,7 @@ spec:
               value: {{ .Values.appVersion }}
           ports:
             - containerPort: 5000
-              name: http
-            - containerPort: 5000
-              name: metrics
+              name: http-metrics
           livenessProbe:
             httpGet:
               path: /health
@@ -50,13 +45,7 @@ spec:
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
-          resources:
-            limits:
-              cpu: "0.5"
-              memory: "256Mi"
-            requests:
-              cpu: "0.1"
-              memory: "128Mi"
+          resources: {}
           volumeMounts:
           - name: flask-app-script
             mountPath: /launch-flask-app.sh
