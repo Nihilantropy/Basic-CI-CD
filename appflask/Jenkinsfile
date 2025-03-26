@@ -28,6 +28,9 @@ pipeline {
         // Integration controls
         booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
         booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
+
+        // metrics
+        booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
     }
 
     environment {
@@ -89,6 +92,7 @@ pipeline {
                     env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
                     env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
                     env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
+                    env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
                     
                     // Try to load the configuration file
                     try {
@@ -109,6 +113,7 @@ pipeline {
                             if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
                             if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
                             if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
+                            if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
                             
                             echo "Configuration values set from config file"
                         } else {
@@ -144,6 +149,7 @@ pipeline {
                     echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
                     echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
                     echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
+                    echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
                 }
             }
         }

@@ -26,8 +26,5 @@ COPY requirements.txt requirements-dev.txt /app/
 # Install both production and development dependencies
 RUN /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt -r /app/requirements-dev.txt
 
-# Make sure the venv is usable by anyone
-RUN chmod -R 777 /app/venv
-
 # Keep the container running
 CMD ["tail", "-f", "/dev/null"]

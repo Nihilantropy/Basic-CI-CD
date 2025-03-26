@@ -20,17 +20,3 @@ scrape_configs:
       password: "JENKINS_PASS_PLACEHOLDER"
     static_configs:
       - targets: ['jenkins:8080']
-    metric_relabel_configs:
-      # Add relabelings for Jenkins metrics
-      - source_labels: [__name__]
-        regex: jenkins_(.+)
-        target_label: jenkins_metric
-        replacement: $1
-      # Keep metrics for build duration
-      - source_labels: [__name__]
-        regex: jenkins_job_building_duration_milliseconds.*
-        action: keep
-      # Keep metrics for queue time
-      - source_labels: [__name__]
-        regex: jenkins_queue_waiting_time_milliseconds.*
-        action: keep
