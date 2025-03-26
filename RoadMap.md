@@ -52,9 +52,9 @@
   - [x] Set up pipeline performance monitoring
   - [x] Enable build statistics collection
 
-- [ ] **4.2 Metrics Collection Validation**
-  - [ ] Confirm Prometheus is collecting Jenkins metrics
-  - [ ] Verify pipeline execution metrics are available
+- [x] **4.2 Metrics Collection Validation**
+  - [x] Confirm Prometheus is collecting Jenkins metrics
+  - [x] Verify pipeline execution metrics are available
   - [ ] Document available Jenkins metrics
 
 ## 5. Dashboard Creation

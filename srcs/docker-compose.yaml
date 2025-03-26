@@ -98,6 +98,16 @@ services:
     networks:
       - gitlab_network
 
+  ### PROMETHEUS PUSHGATEWAY ###
+  pushgateway:
+    container_name: pushgateway
+    image: prom/pushgateway:v1.4.3
+    restart: always
+    ports:
+      - "9091:9091"
+    networks:
+      - gitlab_network
+
 ### GRAFANA ###
   grafana:
     container_name: grafana

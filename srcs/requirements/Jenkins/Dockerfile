@@ -21,8 +21,8 @@ RUN mkdir -p /usr/share/jenkins/ref/conf
 COPY conf/plugins.txt /usr/share/jenkins/ref/conf/plugins.txt
 
 # Create init scripts directory
-RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d/
-COPY init_scripts/*.groovy /usr/share/jenkins/ref/init.groovy.d/
+# RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d/
+# COPY init_scripts/*.groovy /usr/share/jenkins/ref/init.groovy.d/
 
 
 USER jenkins
