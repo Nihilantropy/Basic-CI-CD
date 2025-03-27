@@ -61,8 +61,50 @@ def initMetrics() {
     
     echo "Metrics initialized for build: ${env.METRICS_BUILD_ID}"
     
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    def project = env.JOB_NAME.split('/')[0] ?: "unknown"
+    
     // Record build start in Prometheus format
-    prometheusMetric("jenkins_pipeline_started_total", "counter", 1, ["job": env.JOB_NAME, "build": env.BUILD_NUMBER])
+    prometheusMetric(
+        "jenkins_pipeline_started_total", 
+        "counter", 
+        1, 
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER, 
+            "branch": branch,
+            "project": project
+        ]
+    )
+    
+    // Record queue time if available
+    if (env.QUEUE_TIME) {
+        prometheusMetric(
+            "jenkins_pipeline_queue_time_milliseconds",
+            "gauge",
+            env.QUEUE_TIME as Integer,
+            [
+                "job": env.JOB_NAME, 
+                "build": env.BUILD_NUMBER, 
+                "branch": branch
+            ]
+        )
+    }
+    
+    // Record pipeline execution frequency with trigger information
+    def trigger = env.BUILD_CAUSE ?: "manual"
+    prometheusMetric(
+        "jenkins_pipeline_execution_frequency",
+        "counter",
+        1,
+        [
+            "job": env.JOB_NAME,
+            "branch": branch,
+            "project": project,
+            "trigger": trigger
+        ]
+    )
 }
 
 // Helper function to record stage completion
@@ -73,6 +115,9 @@ def recordStageCompletion(String stageName, long duration, boolean success) {
         return
     }
     
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
     // Record stage completion metrics
     prometheusMetric(
         "jenkins_pipeline_stage_completed_total", 
@@ -82,7 +127,8 @@ def recordStageCompletion(String stageName, long duration, boolean success) {
             "job": env.JOB_NAME, 
             "build": env.BUILD_NUMBER, 
             "stage": stageName, 
-            "result": success ? "success" : "failure"
+            "result": success ? "success" : "failure",
+            "branch": branch
         ]
     )
     
@@ -91,7 +137,12 @@ def recordStageCompletion(String stageName, long duration, boolean success) {
         "jenkins_pipeline_stage_duration_milliseconds", 
         "gauge", 
         duration, 
-        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER, 
+            "stage": stageName,
+            "branch": branch
+        ]
     )
     
     // Using a simpler approach for tracking stages that avoids complex JSON manipulation
@@ -118,6 +169,262 @@ def prometheusMetric(String name, String type, def value, Map<String,String> lab
     pushMetricToGateway(name, type, value, labels)
 }
 
+// Record test results metrics
+def recordTestResults(int passed, int failed, int skipped) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record test results metrics
+    prometheusMetric(
+        "jenkins_pipeline_test_results_total",
+        "gauge",
+        passed,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "branch": branch,
+            "result": "passed"
+        ]
+    )
+    
+    prometheusMetric(
+        "jenkins_pipeline_test_results_total",
+        "gauge",
+        failed,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "branch": branch,
+            "result": "failed"
+        ]
+    )
+    
+    prometheusMetric(
+        "jenkins_pipeline_test_results_total",
+        "gauge",
+        skipped,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "branch": branch,
+            "result": "skipped"
+        ]
+    )
+}
+
+// Record test duration
+def recordTestDuration(long duration) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record test duration metric
+    prometheusMetric(
+        "jenkins_pipeline_test_duration_milliseconds",
+        "gauge",
+        duration,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "branch": branch
+        ]
+    )
+}
+
+// Record code quality metrics - Ruff issues
+def recordRuffIssues(int errorCount, int warningCount) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record Ruff issue metrics
+    prometheusMetric(
+        "jenkins_pipeline_ruff_issues_total",
+        "gauge",
+        errorCount,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "severity": "error",
+            "branch": branch
+        ]
+    )
+    
+    prometheusMetric(
+        "jenkins_pipeline_ruff_issues_total",
+        "gauge",
+        warningCount,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "severity": "warning",
+            "branch": branch
+        ]
+    )
+}
+
+// Record code security metrics - Bandit vulnerabilities
+def recordBanditVulnerabilities(int highCount, int mediumCount, int lowCount) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record Bandit vulnerability metrics
+    prometheusMetric(
+        "jenkins_pipeline_bandit_vulnerabilities_total",
+        "gauge",
+        highCount,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "severity": "high",
+            "branch": branch
+        ]
+    )
+    
+    prometheusMetric(
+        "jenkins_pipeline_bandit_vulnerabilities_total",
+        "gauge",
+        mediumCount,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "severity": "medium",
+            "branch": branch
+        ]
+    )
+    
+    prometheusMetric(
+        "jenkins_pipeline_bandit_vulnerabilities_total",
+        "gauge",
+        lowCount,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "severity": "low",
+            "branch": branch
+        ]
+    )
+}
+
+// Record artifact metrics
+def recordArtifactSize(String artifactId, long sizeBytes) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record artifact size metric
+    prometheusMetric(
+        "jenkins_pipeline_artifact_size_bytes",
+        "gauge",
+        sizeBytes,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "artifact_id": artifactId,
+            "branch": branch
+        ]
+    )
+}
+
+// Record Nexus upload status
+def recordNexusUploadStatus(String artifactId, String version, boolean success) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record Nexus upload status metric
+    prometheusMetric(
+        "jenkins_pipeline_nexus_upload_status",
+        "gauge",
+        success ? 1 : 0,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "artifact_id": artifactId,
+            "version": version,
+            "branch": branch,
+            "status": success ? "1" : "0"
+        ]
+    )
+}
+
+// Record resource utilization
+def recordResourceUtilization(String resourceType, double value) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
+    // Record resource utilization metric
+    prometheusMetric(
+        "jenkins_pipeline_resource_utilization",
+        "gauge",
+        value,
+        [
+            "job": env.JOB_NAME,
+            "build": env.BUILD_NUMBER,
+            "resource": resourceType,
+            "branch": branch
+        ]
+    )
+}
+
+// Record executor utilization
+def recordExecutorUtilization(String executorName, double utilizationPercent) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Record executor utilization metric
+    prometheusMetric(
+        "jenkins_executor_utilization_percent",
+        "gauge",
+        utilizationPercent,
+        [
+            "job": env.JOB_NAME,
+            "executor": executorName
+        ]
+    )
+}
+
 // Finalize metrics collection at the end of the build
 def finalizeMetrics(String result) {
     def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
@@ -130,12 +437,22 @@ def finalizeMetrics(String result) {
     def buildEndTime = System.currentTimeMillis()
     def buildDuration = buildEndTime - (env.METRICS_BUILD_START_TIME as Long)
     
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    def project = env.JOB_NAME.split('/')[0] ?: "unknown"
+    
     // Record build result metrics
     prometheusMetric(
         "jenkins_pipeline_completed_total", 
         "counter", 
         1, 
-        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "result": result]
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER, 
+            "result": result,
+            "branch": branch,
+            "project": project
+        ]
     )
     
     // Record build duration
@@ -143,7 +460,12 @@ def finalizeMetrics(String result) {
         "jenkins_pipeline_duration_milliseconds", 
         "gauge", 
         buildDuration, 
-        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER]
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER,
+            "branch": branch,
+            "project": project
+        ]
     )
     
     // Log stages summary if any were recorded
@@ -159,7 +481,12 @@ def finalizeMetrics(String result) {
                     "jenkins_pipeline_stage_duration_milliseconds", 
                     "gauge", 
                     stage.duration, 
-                    ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stage.name]
+                    [
+                        "job": env.JOB_NAME, 
+                        "build": env.BUILD_NUMBER, 
+                        "stage": stage.name,
+                        "branch": branch
+                    ]
                 )
             }
         }
@@ -228,6 +555,9 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
     def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     def stageStartTime = 0
     
+    // Get git branch information if available
+    def branch = env.GIT_BRANCH ?: "unknown"
+    
     // Conditionally record stage start
     if (enableMetrics) {
         stageStartTime = System.currentTimeMillis()
@@ -235,7 +565,12 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
             "jenkins_pipeline_stage_started_total", 
             "counter", 
             1, 
-            ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
+            [
+                "job": env.JOB_NAME, 
+                "build": env.BUILD_NUMBER, 
+                "stage": stageName,
+                "branch": branch
+            ]
         )
     }
     

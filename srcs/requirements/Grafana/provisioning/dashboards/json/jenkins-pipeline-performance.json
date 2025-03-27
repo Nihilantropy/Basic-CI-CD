@@ -1,0 +1,908 @@
+{
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "enable": true,
+          "iconColor": "#5794F2",
+          "name": "Jenkins Builds",
+          "target": {
+            "expr": "changes(jenkins_pipeline_started_total[1m]) > 0",
+            "refId": "A"
+          },
+          "textFormat": "Job: {{job}}, Branch: {{branch}}"
+        }
+      ]
+    },
+    "description": "Comprehensive view of CI/CD pipeline performance, stage metrics, and system health",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "panels": [],
+        "title": "KPI Stats and System Health",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 1
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "text": {
+            "titleSize": 16,
+            "valueSize": 50
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "sum(jenkins_pipeline_started_total{job=~\"$job\"})",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Total Pipeline Executions",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Percentage of stages that complete successfully",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "green",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 1
+        },
+        "id": 3,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "text": {
+            "titleSize": 16,
+            "valueSize": 25
+          }
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "count(jenkins_pipeline_stage_completed_total{result=\"success\", job=~\"$job\"}) / count(jenkins_pipeline_stage_completed_total{job=~\"$job\"}) * 100",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Stage Success Rate",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Up/Down status of Jenkins service",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "red",
+                    "index": 0,
+                    "text": "Offline"
+                  },
+                  "1": {
+                    "color": "green",
+                    "index": 1,
+                    "text": "Online"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 1
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "text": {
+            "titleSize": 16,
+            "valueSize": 50
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "up{job=\"jenkins\"}",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Jenkins Service Health",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Current memory usage of Jenkins server",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 8,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 2
+                },
+                {
+                  "color": "red",
+                  "value": 3
+                }
+              ]
+            },
+            "unit": "gbytes"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 1
+        },
+        "id": 5,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "text": {
+            "titleSize": 16,
+            "valueSize": 25
+          }
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "process_resident_memory_bytes{job=\"jenkins\"} / 1024 / 1024 / 1024",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Jenkins Memory Usage",
+        "type": "gauge"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 5
+        },
+        "id": 6,
+        "panels": [],
+        "title": "Pipeline Performance",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Number of pipeline executions over time",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        },
+        "id": 7,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "sum(increase(jenkins_pipeline_started_total{job=~\"$job\"}[$__interval])) by (job)",
+            "interval": "",
+            "legendFormat": "{{job}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Pipeline Executions Over Time",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Distribution of pipeline executions across branches",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-BlYlRd"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        },
+        "id": 8,
+        "options": {
+          "displayMode": "gradient",
+          "minVizHeight": 10,
+          "minVizWidth": 0,
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true,
+          "text": {}
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "sum(jenkins_pipeline_started_total{job=~\"$job\"}) by (branch)",
+            "interval": "",
+            "legendFormat": "{{branch}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Pipeline Executions by Branch",
+        "transformations": [
+          {
+            "id": "sortBy",
+            "options": {
+              "fields": {},
+              "sort": [
+                {
+                  "desc": true,
+                  "field": "Value"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "bargauge"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        },
+        "id": 9,
+        "panels": [],
+        "title": "Stage Performance",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Average duration of each pipeline stage in milliseconds",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-BlYlRd"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 0,
+          "y": 15
+        },
+        "id": 10,
+        "options": {
+          "displayMode": "gradient",
+          "minVizHeight": 10,
+          "minVizWidth": 0,
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showUnfilled": true,
+          "text": {}
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "avg(jenkins_pipeline_stage_duration_milliseconds{job=~\"$job\"}) by (stage)",
+            "interval": "",
+            "legendFormat": "{{stage}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Average Stage Duration by Stage",
+        "transformations": [
+          {
+            "id": "sortBy",
+            "options": {
+              "fields": {},
+              "sort": [
+                {
+                  "desc": true,
+                  "field": "Value"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "bargauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Duration of each stage over time",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 8,
+          "y": 15
+        },
+        "id": 11,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "jenkins_pipeline_stage_duration_milliseconds{job=~\"$job\"}",
+            "interval": "",
+            "legendFormat": "{{stage}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Stage Duration Timeline",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "description": "Distribution of stage results (success/failure)",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              }
+            },
+            "mappings": [
+              {
+                "options": {
+                  "failure": {
+                    "color": "red",
+                    "index": 0
+                  },
+                  "success": {
+                    "color": "green",
+                    "index": 1
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 8,
+          "x": 16,
+          "y": 15
+        },
+        "id": 12,
+        "options": {
+          "displayLabels": ["percent"],
+          "legend": {
+            "displayMode": "list",
+            "placement": "right",
+            "showLegend": true,
+            "values": ["value"]
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "editorMode": "code",
+            "expr": "count(jenkins_pipeline_stage_completed_total{job=~\"$job\"}) by (result)",
+            "interval": "",
+            "legendFormat": "{{result}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Stage Completion Status",
+        "type": "piechart"
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 39,
+    "tags": ["jenkins", "pipeline", "ci-cd"],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "definition": "label_values(jenkins_pipeline_started_total, job)",
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "name": "job",
+          "options": [],
+          "query": {
+            "query": "label_values(jenkins_pipeline_started_total, job)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "definition": "label_values(jenkins_pipeline_started_total, branch)",
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "name": "branch",
+          "options": [],
+          "query": {
+            "query": "label_values(jenkins_pipeline_started_total, branch)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Jenkins Pipeline Performance Dashboard",
+    "uid": "jenkins-pipeline-performance",
+    "version": 1,
+    "weekStart": ""
+  }
