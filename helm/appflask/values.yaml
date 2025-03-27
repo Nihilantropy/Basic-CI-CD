@@ -4,7 +4,7 @@ appVersion: "latest"
 
 # Flask environment setting
 # Options: development, testing, production, default (development)
-flaskEnv: "default"
+flaskEnv: "development"
 
 # Number of replicas to deploy
 replicaCount: 2

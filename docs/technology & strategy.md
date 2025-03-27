@@ -22,11 +22,11 @@ We will implement a pull-based integration model where:
 2. **Prometheus scraping configuration:**
    ```yaml
    scrape_configs:
-     - job_name: 'flask-app'
+     - job_name: 'appflask'
        scrape_interval: 15s
        metrics_path: '/metrics'
        static_configs:
-         - targets: ['flask-app:5000']
+         - targets: ['appflask:5000']
      
      - job_name: 'jenkins'
        scrape_interval: 30s

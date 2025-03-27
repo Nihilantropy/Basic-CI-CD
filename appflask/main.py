@@ -39,7 +39,7 @@ def main() -> None:
 
         # Use an environment variable to configure host and port,
         # defaulting to safe values for non-development environments.
-        host = os.getenv("FLASK_RUN_HOST", "0.0.0.0" if flask_env == "development" else "127.0.0.1")
+        host = os.getenv("FLASK_RUN_HOST", "0.0.0.0" if flask_env == "development" or flask_env == "default" else "127.0.0.1")
         port = int(os.getenv("FLASK_RUN_PORT", "5000"))
         app.run(host=host, port=port)
 

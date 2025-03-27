@@ -7,6 +7,7 @@ data:
   launch-flask-app.sh: |
     #!/bin/bash
     set -e
+
     echo "Updating apt-get..."
     apt-get update
     echo "Installing wget..."
@@ -15,7 +16,9 @@ data:
     
     # Use the specified appVersion from values.yaml
     APP_VERSION="{{ .Values.appVersion }}"
+    APPFLASK="appflask-$APP_VERSION.bin"
     echo "Using application version: $APP_VERSION"
+
     
     # Build the download URL based on the version
     DOWNLOAD_URL="http://nexus-service.nexus.svc.cluster.local:8082/repository/my-artifacts/WmcA/appflask/$APP_VERSION/appflask-$APP_VERSION.bin"
@@ -26,7 +29,7 @@ data:
     RETRY_COUNT=0
     
     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-      if wget -O /usr/local/bin/flask-app.bin $DOWNLOAD_URL; then
+      if wget -O /usr/local/bin/$APPFLASK $DOWNLOAD_URL; then
         echo "Download successful!"
         break
       else
@@ -42,11 +45,11 @@ data:
     done
     
     echo "Setting executable permission..."
-    chmod +x /usr/local/bin/flask-app.bin
+    chmod +x /usr/local/bin/$APPFLASK
     echo "Launching the executable..."
     
     # Pass any environment variables
     export FLASK_ENV="{{ .Values.flaskEnv }}"
     echo "Using Flask environment: $FLASK_ENV"
     
-    exec /usr/local/bin/flask-app.bin
+    exec /usr/local/bin/$APPFLASK
