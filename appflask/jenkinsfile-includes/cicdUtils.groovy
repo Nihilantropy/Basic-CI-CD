@@ -51,13 +51,13 @@ def initMetrics() {
     }
     
     // Record build start time - used for duration calculation
-    env.METRICS_BUILD_START_TIME = System.currentTimeMillis()
+    env.METRICS_BUILD_START_TIME = System.currentTimeMillis().toString()
     
     // Record some metadata about the build
     env.METRICS_BUILD_ID = "${env.JOB_NAME.replaceAll('[^a-zA-Z0-9_]', '_')}_${env.BUILD_NUMBER}"
     
-    // Track stages and their timings - use empty JSON array
-    env.METRICS_STAGES = "[]" 
+    // Initialize empty stages array - simple string approach for safety
+    env.METRICS_STAGES = "[]"
     
     echo "Metrics initialized for build: ${env.METRICS_BUILD_ID}"
     
@@ -65,7 +65,41 @@ def initMetrics() {
     prometheusMetric("jenkins_pipeline_started_total", "counter", 1, ["job": env.JOB_NAME, "build": env.BUILD_NUMBER])
 }
 
-// Helper function to output metric in Prometheus format
+// Helper function to record stage completion
+def recordStageCompletion(String stageName, long duration, boolean success) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Record stage completion metrics
+    prometheusMetric(
+        "jenkins_pipeline_stage_completed_total", 
+        "counter", 
+        1, 
+        [
+            "job": env.JOB_NAME, 
+            "build": env.BUILD_NUMBER, 
+            "stage": stageName, 
+            "result": success ? "success" : "failure"
+        ]
+    )
+    
+    // Record stage duration
+    prometheusMetric(
+        "jenkins_pipeline_stage_duration_milliseconds", 
+        "gauge", 
+        duration, 
+        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
+    )
+    
+    // Using a simpler approach for tracking stages that avoids complex JSON manipulation
+    // This is safer in the Jenkins pipeline environment
+    echo "Stage ${stageName} completed in ${duration}ms with result: ${success ? 'success' : 'failure'}"
+}
+
+// Helper function to output metric in Prometheus format and push to Pushgateway
 def prometheusMetric(String name, String type, def value, Map<String,String> labels = [:]) {
     def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
@@ -77,7 +111,11 @@ def prometheusMetric(String name, String type, def value, Map<String,String> lab
         "${k}=\"${v.toString().replace('\\', '\\\\').replace('"', '\\"')}\""
     }.join(',')
     
+    // Log the metric for console output
     echo "PROMETHEUS_METRIC ${name}{${labelStr}} ${value.toString()}"
+    
+    // Push to Pushgateway
+    pushMetricToGateway(name, type, value, labels)
 }
 
 // Finalize metrics collection at the end of the build
@@ -131,6 +169,59 @@ def finalizeMetrics(String result) {
     
     echo "Build metrics finalized for: ${env.METRICS_BUILD_ID}"
 }
+
+// Send metric to Pushgateway
+def pushMetricToGateway(String name, String type, def value, Map<String,String> labels = [:]) {
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    
+    if (!enableMetrics) {
+        return
+    }
+    
+    // Create labels string for metric content
+    def labelStr = labels.collect { k, v -> 
+        "${k}=\"${v.toString().replace('\\', '\\\\').replace('"', '\\"')}\""
+    }.join(',')
+    
+    // Log metric for debugging
+    echo "Pushing metric: ${name}{${labelStr}} ${value.toString()}"
+    
+    // Create job name that's URL-safe
+    def jobNameSafe = env.JOB_NAME.replaceAll('[^a-zA-Z0-9_]', '_')
+    def buildNumber = env.BUILD_NUMBER
+    
+    // Prepare metric in Prometheus text format
+    def metricData = ""
+    
+    // Handle different metric types
+    if (type == "counter") {
+        metricData = """
+# TYPE ${name} counter
+${name}{${labelStr}} ${value.toString()}
+"""
+    } else if (type == "gauge") {
+        metricData = """
+# TYPE ${name} gauge
+${name}{${labelStr}} ${value.toString()}
+"""
+    } else {
+        echo "Unsupported metric type: ${type}"
+        return
+    }
+    
+    // Write metric to a temporary file
+    def tempFile = "metric_${name}_${System.currentTimeMillis()}.txt"
+    writeFile file: tempFile, text: metricData
+    
+    // Push to Pushgateway using curl with correct URL format
+    sh """
+        echo "Pushing to http://pushgateway:9091/metrics/job/${jobNameSafe}/instance/${buildNumber}"
+        curl -s --data-binary @${tempFile} http://pushgateway:9091/metrics/job/${jobNameSafe}/instance/${buildNumber}
+        rm ${tempFile}
+    """
+}
+
+/* Main pipeline utility functions */
 
 // Enhanced runStage function with built-in metrics collection
 def runStage(String stageName, String notificationMessage, Closure stageBody) {
@@ -186,49 +277,6 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
         
         // Rethrow the exception to ensure the pipeline fails
         error "${stageName} failed. Pipeline interrupted."
-    }
-}
-
-// Helper function to record stage completion
-def recordStageCompletion(String stageName, long duration, boolean success) {
-    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
-    
-    if (!enableMetrics) {
-        return
-    }
-    
-    // Record stage completion metrics
-    prometheusMetric(
-        "jenkins_pipeline_stage_completed_total", 
-        "counter", 
-        1, 
-        [
-            "job": env.JOB_NAME, 
-            "build": env.BUILD_NUMBER, 
-            "stage": stageName, 
-            "result": success ? "success" : "failure"
-        ]
-    )
-    
-    // Record stage duration
-    prometheusMetric(
-        "jenkins_pipeline_stage_duration_milliseconds", 
-        "gauge", 
-        duration, 
-        ["job": env.JOB_NAME, "build": env.BUILD_NUMBER, "stage": stageName]
-    )
-    
-    // Store stage metrics in our stages array
-    try {
-        def stages = readJSON text: env.METRICS_STAGES
-        stages.add([
-            name: stageName,
-            duration: duration,
-            success: success
-        ])
-        env.METRICS_STAGES = writeJSON(json: stages, returnText: true)
-    } catch (Exception e) {
-        echo "Error recording stage metrics: ${e.getMessage()}"
     }
 }
 

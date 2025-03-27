@@ -67,9 +67,8 @@ pipeline {
         stage('Load Utilities') {
             steps {
                 script {
-                    // Load utility functions from the includes directory
-                    utils = load "includes/cicdUtils.groovy"
-                    utils.initMetrics()
+                    // Load utility functions from the jenkinsfile-includes directory
+                    utils = load "jenkinsfile-includes/cicdUtils.groovy"
                 }
             }
         }
@@ -150,6 +149,9 @@ pipeline {
                     echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
                     echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
                     echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
+
+                    // initialize Prometheus metrics if enabled
+                    utils.initMetrics()
                 }
             }
         }

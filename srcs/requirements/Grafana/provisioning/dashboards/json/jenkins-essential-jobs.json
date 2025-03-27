@@ -647,7 +647,7 @@
         "pluginVersion": "7.3.5",
         "targets": [
           {
-            "expr": "default_jenkins_up",
+            "expr": "jenkins_pipeline_stage_duration_milliseconds",
             "interval": "",
             "legendFormat": "",
             "refId": "A"

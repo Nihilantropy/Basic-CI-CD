@@ -7,25 +7,27 @@
 3. [Rate Limiting](#rate-limiting)
 4. [Version Management](#version-management)
 5. [Endpoints](#endpoints)
-6. [Configuration](#configuration)
-7. [Error Handling](#error-handling)
-8. [Testing](#testing)
-9. [CI/CD Pipeline](#cicd-pipeline)
-   - [Jenkinsfile Structure](#jenkinsfile-structure)
-   - [Pipeline Stages](#pipeline-stages)
-   - [Code Quality and Security](#code-quality-and-security)
-   - [Artifact Management](#artifact-management)
-   - [Git Integration](#git-integration)
-   - [Notifications](#notifications)
-10. [Containerization](#containerization)
-11. [Deployment](#deployment)
-12. [Project Structure](#project-structure)
+6. [Metrics Collection](#metrics-collection)
+7. [Configuration](#configuration)
+8. [Error Handling](#error-handling)
+9. [Testing](#testing)
+10. [CI/CD Pipeline](#cicd-pipeline)
+    - [Jenkinsfile Structure](#jenkinsfile-structure)
+    - [Pipeline Stages](#pipeline-stages)
+    - [Code Quality and Security](#code-quality-and-security)
+    - [Artifact Management](#artifact-management)
+    - [Git Integration](#git-integration)
+    - [Notifications](#notifications)
+11. [Containerization](#containerization)
+12. [Deployment](#deployment)
+13. [Monitoring Integration](#monitoring-integration)
+14. [Project Structure](#project-structure)
 
 ## Introduction
 
-This Flask application serves as a simple HTTP service with two endpoints, featuring version tracking and global rate limiting. It's designed to be deployed in a Kubernetes environment via a CI/CD pipeline using Jenkins, GitLab, and Nexus.
+This Flask application serves as a simple HTTP service with several endpoints, featuring version tracking, global rate limiting, and metrics collection. It's designed to be deployed in a Kubernetes environment via a CI/CD pipeline using Jenkins, GitLab, and Nexus.
 
-The application exposes a customizable greeting endpoint and a health check endpoint. It implements rate limiting as a defense against DoS attacks by limiting the total number of requests to the application, regardless of source IP.
+The application exposes a customizable greeting endpoint, a health check endpoint, and a metrics endpoint for monitoring. It implements rate limiting as a defense against DoS attacks by limiting the total number of requests to the application, regardless of source IP.
 
 ## Application Architecture
 
@@ -33,14 +35,16 @@ The application follows a modular architecture with clear separation of concerns
 
 - **Application Factory Pattern**: Uses Flask's application factory pattern to create and configure the app instance
 - **Blueprint-based Routing**: Organizes routes in a blueprint for better code organization
-- **Modular Components**: Separate modules for configuration, rate limiting, error handling, and version management
+- **Modular Components**: Separate modules for configuration, rate limiting, error handling, metrics, and version management
 - **Environment-specific Configuration**: Different configurations for development, testing, and production environments
+- **Prometheus Integration**: Built-in metrics collection and exposure for monitoring
 
 ### Key Components
 
 - **app.py**: Application factory and entry point
 - **config.py**: Environment-specific configuration management
 - **limiter.py**: Global rate limiting implementation
+- **metrics.py**: Prometheus metrics collection and endpoint
 - **routes.py**: HTTP endpoint definitions
 - **errors.py**: Custom error handling, especially for rate limiting
 - **version.py**: Version management and access
@@ -108,7 +112,7 @@ The application includes dynamic version information in its responses, sourced f
 
 ## Endpoints
 
-The application exposes two HTTP endpoints:
+The application exposes three HTTP endpoints:
 
 ### 1. Root Endpoint (`/`)
 
@@ -135,6 +139,49 @@ The application exposes two HTTP endpoints:
   }
   ```
 - **Status Code**: Always returns 200 OK when the application is running
+
+### 3. Metrics Endpoint (`/metrics`)
+
+- **Method**: GET
+- **Purpose**: Exposes application metrics in Prometheus format
+- **Response Format**: Prometheus text-based exposition format
+- **Content Type**: `text/plain; version=0.0.4; charset=utf-8`
+- **Usage**: Scraped by Prometheus for monitoring
+
+## Metrics Collection
+
+The application implements comprehensive metrics collection using the Prometheus client library.
+
+### Key Metrics
+
+1. **HTTP Request Metrics**:
+   - `appflask_http_requests_total`: Counter of total HTTP requests (labeled by method, endpoint, status)
+   - `appflask_http_request_duration_seconds`: Histogram of request durations (labeled by method, endpoint)
+   - `appflask_http_requests_in_flight`: Gauge of current in-flight requests
+
+2. **Rate Limiting Metrics**:
+   - `appflask_rate_limit_hits_total`: Counter of rate limit occurrences
+   - `appflask_rate_limit_remaining`: Gauge of remaining requests in the rate limit window
+
+3. **Application Metrics**:
+   - `appflask_app_info`: Information about the application (labeled by version)
+   - `appflask_uptime_seconds`: Application uptime in seconds
+   - `appflask_start_time_seconds`: Unix timestamp of application start time
+
+### Implementation Details
+
+- Metrics are collected using a custom registry with a consistent prefix
+- Prometheus client's histogram, counter, and gauge types are used appropriately
+- Metrics collection is implemented with minimal performance impact
+- Integration with Flask's request lifecycle for automatic tracking
+
+### Testing Metrics
+
+Several test scripts are available to validate metrics collection:
+
+- `test_query.sh`: Tests Prometheus queries against collected metrics
+- `comprehensive-rate-test.sh`: Tests rate limiting with metrics validation
+- `alert-testing-script.sh`: Tests alerting based on metrics thresholds
 
 ## Configuration
 
@@ -186,16 +233,23 @@ The application includes comprehensive test suites to verify functionality:
    - Rate limit window timing
    - Rate limit reset behavior
 
+3. **test_metrics.py**: Tests metrics collection functionality:
+   - Metrics endpoint existence and content type
+   - Metrics format validity
+   - Metric incrementation with requests
+   - Prefix consistency
+
 ### Running Tests
 
 Tests are run using pytest and are integrated into the CI/CD pipeline:
 ```bash
-pytest srcs/tests --maxfail=1 --disable-warnings -v
+pytest tests/ --maxfail=1 --disable-warnings -v
 ```
 
 ### Test Features
 
 - Rate limit tests properly handle the shared state between tests
+- Metrics tests validate Prometheus-compatible format
 - Tests include detailed assertions with helpful error messages
 - Tests are designed to be non-flaky and reliable in CI/CD environments
 
@@ -278,6 +332,7 @@ The pipeline behavior can be controlled via:
    createMergeRequest: true
    enableGitlabStatus: true
    enableTelegram: true
+   enableMetrics: true
    ```
 
 2. **Jenkins Parameters**:
@@ -313,35 +368,72 @@ The application is deployed to Kubernetes using a Helm chart:
    - Manual Helm deployment fetches the binary from Nexus
    - The application runs as a standalone executable
 
+## Monitoring Integration
+
+The application is designed to integrate with a Prometheus and Grafana monitoring stack:
+
+1. **Metrics Exposure**:
+   - The `/metrics` endpoint exposes Prometheus-compatible metrics
+   - Metrics include request rates, durations, and application information
+   - Rate limit metrics help detect potential DoS attacks
+
+2. **Prometheus Scraping**:
+   - Prometheus is configured to scrape the application's metrics endpoint
+   - Metrics are stored in Prometheus's time-series database
+   - Alerting rules detect anomalies in request patterns and rate limits
+
+3. **Grafana Visualization**:
+   - Custom Grafana dashboards display application metrics
+   - Panels show request rates, response times, and error rates
+   - Rate limiting metrics are visualized for capacity planning
+
+4. **Testing and Validation**:
+   - Test scripts in the `test_scripts` directory validate metrics collection
+   - Integration tests confirm Prometheus compatibility
+   - Rate limit tests verify metric accuracy under load
+
+For more details on the monitoring setup, see [Monitoring Infrastructure Documentation](docs/monitoring/infrastructure.md).
+
 ## Project Structure
 
 ```
-flask-app/
-├── Dockerfile                   # Container definition for production
-├── Jenkinsfile                  # CI/CD pipeline definition
-├── README.md                    # This documentation file
-├── RequestRateLimits.md         # Rate limiting documentation
+appflask/
 ├── agent/                       # CI/CD agent container
-│   └── Dockerfile               # Agent container definition 
+│   └── Dockerfile               # Agent container definition
+├── appflask/                    # Application source code
+│   ├── __init__.py              # Package marker
+│   ├── app.py                   # Application factory
+│   ├── config.py                # Configuration management
+│   ├── errors.py                # Error handlers
+│   ├── limiter.py               # Rate limiting logic
+│   ├── metrics.py               # Metrics collection and exposure
+│   ├── routes.py                # HTTP endpoints
+│   └── version.py               # Version management
 ├── includes/                    # Pipeline utilities
 │   └── cicdUtils.groovy         # Reusable pipeline functions
+├── tests/                       # Test suites
+│   ├── __init__.py              # Package marker
+│   ├── conftest.py              # Pytest configuration
+│   ├── test_app.py              # Application tests
+│   ├── test_metrics.py          # Metrics tests
+│   └── test_rate_limit.py       # Rate limiting tests
+├── test_scripts/                # Validation scripts
+│   ├── alert-testing-script.sh  # Test alerts based on metrics
+│   ├── comprehensive-rate-test.sh # Test rate limits with metrics
+│   ├── test_query.sh            # Test Prometheus queries
+│   └── test_rate_limit.sh       # Test rate limiting
+├── __init__.py                  # Root package marker
+├── appflask.spec                # PyInstaller specification
+├── hook-appflask.py             # PyInstaller hook
 ├── jenkins-config.yml           # Pipeline configuration
-├── version.info                 # Current application version
-└── srcs/                        # Application source code
-    ├── __init__.py              # Package marker
-    ├── main/                    # Main application code
-    │   ├── __init__.py          # Package marker
-    │   ├── app.py               # Application factory
-    │   ├── config.py            # Configuration management
-    │   ├── errors.py            # Error handlers
-    │   ├── limiter.py           # Rate limiting logic
-    │   ├── routes.py            # HTTP endpoints
-    │   └── version.py           # Version management
-    ├── requirements.txt         # Dependencies
-    └── tests/                   # Test suites
-        ├── __init__.py          # Package marker
-        ├── test_app.py          # Application tests
-        └── test_rate_limit.py   # Rate limiting tests
+├── Jenkinsfile                  # CI/CD pipeline definition
+├── main.py                      # Application entry point
+├── pyproject.toml               # Python project configuration
+├── README.md                    # This documentation file
+├── requirements-dev.txt         # Development dependencies
+├── requirements.txt             # Runtime dependencies
+├── setup.py                     # Package setup script
+└── version.info                 # Current application version
 ```
 
 This modular structure promotes:
@@ -349,3 +441,4 @@ This modular structure promotes:
 - **Testability**: Components can be tested in isolation
 - **Maintainability**: Easy to understand and modify
 - **Extensibility**: New features can be added with minimal changes to existing code
+- **Observability**: Built-in metrics collection for monitoring
