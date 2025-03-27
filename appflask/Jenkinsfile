@@ -422,5 +422,11 @@ pipeline {
                 cleanWs()
             }
         }
+        always {
+            script {
+                echo "Finalizing metrics collection..."
+                utils.finalizeMetrics(currentBuild.result ?: 'SUCCESS')
+            }
+        }
     }
 }
