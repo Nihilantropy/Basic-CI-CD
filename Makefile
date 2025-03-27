@@ -12,6 +12,8 @@ PROJECT_SERVICES = gitlab \
                    jenkins \
                    nexus \
 				   prometheus \
+				   pushgateway \
+				   alertmanager \
 				   grafana
 
 # List of CI/CD volumes and networks as defined in docker-compose.yml
@@ -22,6 +24,7 @@ PROJECT_VOLUMES = gitlab_data \
 				   jenkins-docker-certs \
                    nexus_data \
 				   prometheus_data \
+				   alertmanager_data \
 				   grafana_data
 
 PROJECT_NETWORKS = $(FOLDER_PREFIX)gitlab_network

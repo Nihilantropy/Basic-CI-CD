@@ -18,60 +18,64 @@ from prometheus_client import (
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+# Define a consistent prefix for all metrics
+METRIC_PREFIX = "appflask_"
+
 # Create a custom registry for our metrics
 CUSTOM_REGISTRY = CollectorRegistry(auto_describe=True)
 
-# Define metrics with our custom registry
+# Define metrics with our custom registry and prefix
 REQUEST_COUNT = Counter(
-    "http_requests_total",
+    f"{METRIC_PREFIX}http_requests_total",
     "Total number of HTTP requests",
     ["method", "endpoint", "status"],
     registry=CUSTOM_REGISTRY,
 )
 
 REQUEST_LATENCY = Histogram(
-    "http_request_duration_seconds",
+    f"{METRIC_PREFIX}http_request_duration_seconds",
     "HTTP request latency in seconds",
     ["method", "endpoint"],
     registry=CUSTOM_REGISTRY,
 )
 
 IN_FLIGHT = Gauge(
-    "http_requests_in_flight",
+    f"{METRIC_PREFIX}http_requests_in_flight",
     "Current number of HTTP requests in flight",
     registry=CUSTOM_REGISTRY,
 )
 
 RATE_LIMIT_COUNT = Counter(
-    "http_rate_limit_hits_total",
+    f"{METRIC_PREFIX}rate_limit_hits_total",
     "Total number of rate limit hits",
     registry=CUSTOM_REGISTRY,
 )
 
 RATE_LIMIT_REMAINING = Gauge(
-    "http_rate_limit_remaining",
+    f"{METRIC_PREFIX}rate_limit_remaining",
     "Remaining requests in current rate limit window",
     registry=CUSTOM_REGISTRY,
 )
 
 APP_INFO = Gauge(
-    "app_info",
+    f"{METRIC_PREFIX}app_info",
     "Application information",
     ["version"],
     registry=CUSTOM_REGISTRY,
 )
 
 APP_START_TIME = Gauge(
-    "app_start_time_seconds",
+    f"{METRIC_PREFIX}start_time_seconds",
     "Unix timestamp of application start time",
     registry=CUSTOM_REGISTRY,
 )
 
 APP_UPTIME = Gauge(
-    "app_uptime_seconds",
+    f"{METRIC_PREFIX}uptime_seconds",
     "Application uptime in seconds",
     registry=CUSTOM_REGISTRY,
 )
+
 
 class MetricsCollector:
     """Collector for application metrics using Prometheus client."""
@@ -116,7 +120,7 @@ class MetricsCollector:
         app.before_request(self.before_request)
         app.after_request(self.after_request)
 
-        logger.debug("Metrics collection initialized")
+        logger.debug("Metrics collection initialized with prefix: %s", METRIC_PREFIX)
 
     def before_request(self) -> None:
         """Handle tasks before each request, like tracking in-flight requests."""
@@ -173,9 +177,6 @@ class MetricsCollector:
         # Create response with correct content type
         response = Response(metrics_data)
         response.headers["Content-Type"] = CONTENT_TYPE_LATEST
-
-        for metric in CUSTOM_REGISTRY.collect():
-            logger.debug("Registered metric: %s", metric.name)
 
         return response
 

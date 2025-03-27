@@ -9,6 +9,7 @@ import pytest
 from prometheus_client.parser import text_string_to_metric_families
 
 from appflask.app import create_app
+from appflask.metrics import METRIC_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -44,18 +45,18 @@ def test_metrics_content(client):
     # Check for specific metrics - using the family names
     metric_names = [family.name for family in families]
     expected_metrics = [
-        'http_requests',  # This is the family name, not the sample name
-        'http_request_duration_seconds',
-        'app_info',
-        'app_uptime_seconds',
-        'app_start_time_seconds'
+        f'{METRIC_PREFIX}http_requests',  # This is the family name, not the sample name
+        f'{METRIC_PREFIX}http_request_duration_seconds',
+        f'{METRIC_PREFIX}app_info',
+        f'{METRIC_PREFIX}uptime_seconds',
+        f'{METRIC_PREFIX}start_time_seconds'
     ]
     
     for metric in expected_metrics:
         assert metric in metric_names, f"Expected metric {metric} not found"
         
     # Also check that the _total suffix exists in the raw output for counters
-    assert 'http_requests_total{' in metrics_data
+    assert f'{METRIC_PREFIX}http_requests_total' in metrics_data
 
 def test_request_metrics_increment(client):
     """Test that request metrics increment when endpoints are called."""
@@ -67,9 +68,9 @@ def test_request_metrics_increment(client):
     from prometheus_client.parser import text_string_to_metric_families
     initial_values = {}
     for family in text_string_to_metric_families(initial_metrics):
-        if family.name == 'http_requests':
+        if family.name == f'{METRIC_PREFIX}http_requests':
             for sample in family.samples:
-                if sample.name == 'http_requests_total':
+                if sample.name == f'{METRIC_PREFIX}http_requests_total':
                     key = (sample.labels['endpoint'], sample.labels['method'], sample.labels['status'])
                     initial_values[key] = sample.value
     
@@ -84,9 +85,9 @@ def test_request_metrics_increment(client):
     # Parse updated metrics
     updated_values = {}
     for family in text_string_to_metric_families(updated_metrics):
-        if family.name == 'http_requests':
+        if family.name == f'{METRIC_PREFIX}http_requests':
             for sample in family.samples:
-                if sample.name == 'http_requests_total':
+                if sample.name == f'{METRIC_PREFIX}http_requests_total':
                     key = (sample.labels['endpoint'], sample.labels['method'], sample.labels['status'])
                     updated_values[key] = sample.value
     
@@ -105,4 +106,45 @@ def test_raw_metrics_output(client):
     response = client.get("/metrics")
     metrics_text = response.data.decode('utf-8')
     print(f"METRICS OUTPUT:\n{metrics_text}")
-    assert 'http_requests' in metrics_text
+    assert f'{METRIC_PREFIX}http_requests' in metrics_text
+
+def test_metric_prefix_applied(client):
+    """Test that all metrics have the correct prefix."""
+    response = client.get("/metrics")
+    metrics_text = response.data.decode('utf-8')
+    
+    # Check that no metrics exist without the prefix
+    # by splitting lines and examining each metric name
+    for line in metrics_text.split('\n'):
+        # Skip comment lines and empty lines
+        if line.startswith('#') or not line.strip():
+            continue
+        
+        # Parse the metric name from the line
+        if '{' in line:
+            metric_name = line.split('{')[0]
+        else:
+            metric_name = line.split(' ')[0]
+            
+        # Assert that each metric starts with our prefix
+        if metric_name:  # Skip empty lines
+            assert metric_name.startswith(METRIC_PREFIX), f"Metric {metric_name} missing prefix"
+
+def test_prometheus_metric_types(client):
+    """Test that all expected metric types (counter, gauge, histogram) are present."""
+    client.get("/")  # Generate some metrics
+    response = client.get("/metrics")
+    metrics_data = response.data.decode('utf-8')
+    
+    # Check for counter metrics (have _total suffix)
+    assert f'{METRIC_PREFIX}http_requests_total' in metrics_data
+    assert f'{METRIC_PREFIX}rate_limit_hits_total' in metrics_data
+    
+    # Check for gauge metrics (no suffix)
+    assert f'{METRIC_PREFIX}http_requests_in_flight' in metrics_data
+    assert f'{METRIC_PREFIX}uptime_seconds' in metrics_data
+    
+    # Check for histogram metrics (have _bucket, _sum, _count suffixes)
+    assert f'{METRIC_PREFIX}http_request_duration_seconds_bucket' in metrics_data
+    assert f'{METRIC_PREFIX}http_request_duration_seconds_sum' in metrics_data
+    assert f'{METRIC_PREFIX}http_request_duration_seconds_count' in metrics_data

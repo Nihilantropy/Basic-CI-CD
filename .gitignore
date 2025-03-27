@@ -7,3 +7,4 @@ __pycache__
 jenkins-cli.jar
 build/
 dist/
+appflask.egg-info

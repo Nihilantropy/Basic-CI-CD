@@ -1,0 +1,20 @@
+groups:
+  - name: flask-app-alerts
+    rules:
+    - alert: FlaskRateLimitExceeded
+      expr: appflask_rate_limit_hits_total >= 200
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Flask Application Rate Limit Exceeded"
+        description: "The Flask application has hit rate limits more than 200 times (current value: {{ $value }})"
+    
+    - alert: FlaskRateLimitHigh
+      expr: rate(appflask_rate_limit_hits_total[5m]) > 10
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High Rate Limit Hit Rate"
+        description: "The Flask application is hitting rate limits at a high rate ({{ $value }} per second over 5m)"

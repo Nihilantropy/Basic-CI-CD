@@ -108,6 +108,19 @@ services:
     networks:
       - gitlab_network
 
+  ### ALERTMANAGER ###
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:v0.23.0
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./requirements/Alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    networks:
+      - gitlab_network
+
 ### GRAFANA ###
   grafana:
     container_name: grafana
@@ -140,4 +153,5 @@ volumes:
   jenkins-docker-certs:
   nexus_data:
   prometheus_data:
+  alertmanager_data:
   grafana_data:
