@@ -18,7 +18,7 @@ services:
     env_file:
       - ./requirements/GitLab/.env
     networks:
-      - gitlab_network
+      - shared_network
 
   ### JENKINS DOCKER-IN-DOCKER ###
   jenkins-docker:
@@ -35,7 +35,7 @@ services:
       - "2376:2376"
     command: --storage-driver overlay2
     networks:
-      gitlab_network:
+      shared_network:
         aliases:
           - docker
 
@@ -62,7 +62,7 @@ services:
     env_file:
       - ./requirements/Jenkins/.env
     networks:
-      - gitlab_network
+      - shared_network
 
   ### NEXUS ###
   nexus:
@@ -79,7 +79,7 @@ services:
     env_file:
       - ./requirements/Nexus/.env
     networks:
-      - gitlab_network
+      - shared_network
 
   ### PROMETHEUS ###
   prometheus:
@@ -96,7 +96,7 @@ services:
     env_file:
       - ./requirements/Prometheus/.env
     networks:
-      - gitlab_network
+      - shared_network
 
   ### PROMETHEUS PUSHGATEWAY ###
   pushgateway:
@@ -106,7 +106,7 @@ services:
     ports:
       - "9091:9091"
     networks:
-      - gitlab_network
+      - shared_network
 
   ### ALERTMANAGER ###
   alertmanager:
@@ -119,7 +119,7 @@ services:
       - ./requirements/Alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager_data:/alertmanager
     networks:
-      - gitlab_network
+      - shared_network
 
 ### GRAFANA ###
   grafana:
@@ -139,7 +139,7 @@ services:
     env_file:
       - ./requirements/Grafana/.env
     networks:
-      - gitlab_network
+      - shared_network
 
   ### CADVISOR ###
   cadvisor:
@@ -157,7 +157,7 @@ services:
       - /etc/machine-id:/etc/machine-id:ro
       - /var/run/docker.sock:/var/run/docker.sock:rw
     networks:
-      - gitlab_network
+      - shared_network
     restart: on-failure
     privileged: true
     devices: 
@@ -173,8 +173,24 @@ services:
       retries: 3
       start_period: 30s
 
+  ### SONARQUBE ###
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:9.9-community
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    env_file:
+      - ./requirements/SonarQube/.env
+    networks:
+      - shared_network
+
 networks:
-  gitlab_network:
+  shared_network:
     driver: bridge
 
 volumes:
@@ -187,3 +203,6 @@ volumes:
   prometheus_data:
   alertmanager_data:
   grafana_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:

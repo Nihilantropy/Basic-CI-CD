@@ -14,7 +14,8 @@ PROJECT_SERVICES = gitlab \
 				   prometheus \
 				   pushgateway \
 				   alertmanager \
-				   grafana
+				   grafana \
+				   sonarqube
 
 # List of CI/CD volumes and networks as defined in docker-compose.yml
 PROJECT_VOLUMES = gitlab_data \
@@ -25,7 +26,11 @@ PROJECT_VOLUMES = gitlab_data \
                    nexus_data \
 				   prometheus_data \
 				   alertmanager_data \
-				   grafana_data
+				   grafana_data \
+				   sonarqube_data \
+				   sonarqube_logs \
+				   sonarqube_extentions
+
 
 PROJECT_NETWORKS = $(FOLDER_PREFIX)gitlab_network
 
@@ -70,6 +75,11 @@ restart:
 re: prune all
 
 prune:
+	@read -p "Are you sure you want to delete all CI/CD-related resources? (Y/n): " ans; \
+	if [ "$$ans" != "Y" ] && [ "$$ans" != "y" ]; then \
+	  echo "Prune cancelled."; \
+	  exit 1; \
+	fi
 	@echo "Deleting all CI/CD-related resources..."
 	@echo "Stopping containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) down -v 2>/dev/null || true
@@ -86,5 +96,6 @@ prune:
 		docker network rm $$network 2>/dev/null || true; \
 	done
 	@echo "Done! All CI/CD-related resources have been removed."
+
 
 .PHONY: all setup images start show stop up down restart re prune

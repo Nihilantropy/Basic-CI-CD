@@ -1,88 +1,78 @@
-# CI/CD Project 3 - Implementation Roadmap
+# SonarQube Implementation Roadmap
 
-## 1. Documentation & Strategy Phase
+## 1. Infrastructure Setup
+- [x] **1.1 SonarQube Server**
+  - [x] Add SonarQube service to Docker Compose file
+  - [x] Configure persistent volume for SonarQube data
+  - [x] Update network configuration for service discovery
+  - [x] Verify SonarQube UI accessibility
 
-- [x] **1.1 Requirements Analysis**
-  - [x] Document Subject 3 requirements in detail
-  - [x] Identify integration points with existing CI/CD infrastructure
-  - [x] Define key metrics to collect from Flask application and Jenkins
+- [ ] **1.2 Database Configuration**
+  - [ ] Set up PostgreSQL database for SonarQube
+  - [ ] Configure database credentials
+  - [ ] Validate database connection
 
-- [x] **1.2 Architecture Planning**
-  - [x] Design monitoring infrastructure architecture
-  - [x] Document data flow between components
-  - [x] Create reference architecture diagram for the monitoring stack
+## 2. SonarQube Configuration
+- [ ] **2.1 Instance Setup**
+  - [ ] Complete initial admin setup
+  - [ ] Generate authentication token for CI/CD integration
+  - [ ] Configure system settings (timeout, memory, etc.)
 
-- [x] **1.3 Tool Selection & Strategy**
-  - [x] Evaluate and document Prometheus integration approach
-  - [x] Define metrics collection strategy for Flask application
-  - [x] Determine Jenkins monitoring approach
-  - [x] Document Grafana dashboard requirements
+- [ ] **2.2 Project Configuration**
+  - [ ] Create project in SonarQube
+  - [ ] Define project key and display name
+  - [ ] Set up default quality profiles for Python
 
-## 2. Environment Enhancement
+- [ ] **2.3 Quality Gates**
+  - [ ] Configure custom quality gate criteria
+  - [ ] Set thresholds for bugs, vulnerabilities, and code smells
+  - [ ] Define code coverage requirements
 
-- [x] **2.1 Docker Compose Configuration**
-  - [x] Add Prometheus and Grafana services
-  - [x] Configure persistent storage for metrics data
-  - [x] Set up proper networking between services
-  - [x] Update Makefile for new services
+## 3. Jenkins Integration
+- [ ] **3.1 Plugin Installation**
+  - [ ] Install SonarQube Scanner plugin in Jenkins
+  - [ ] Configure SonarQube server connection in Jenkins
+  - [ ] Test connection between Jenkins and SonarQube
 
-- [x] **2.2 Monitoring Infrastructure Setup**
-  - [x] Configure Prometheus for metrics collection
-  - [x] Set up Grafana with Prometheus data source
-  - [x] Establish basic security for monitoring components
-  - [x] Test basic monitoring functionality
+- [ ] **3.2 Credentials Setup**
+  - [ ] Add SonarQube authentication token to Jenkins credentials
+  - [ ] Configure access permissions
 
-## 3. Flask Application Enhancement
+## 4. Pipeline Implementation
+- [ ] **4.1 Analysis Configuration**
+  - [ ] Create sonar-project.properties file
+  - [ ] Configure analysis scope and exclusions
+  - [ ] Set up source directories and test coverage reports
 
-- [x] **3.1 Metrics Implementation**
-  - [x] Integrate Prometheus client library
-  - [x] Implement core application metrics (requests, response times)
-  - [x] Create `/metrics` endpoint with standardized format
-  - [x] Add uptime tracking and version information
+- [ ] **4.2 Jenkinsfile Updates**
+  - [ ] Add SonarQube analysis stage
+  - [ ] Implement Quality Gate checking
+  - [ ] Configure analysis to run after tests but before build
 
-- [x] **3.2 Testing & Integration**
-  - [x] Verify metrics functionality and accuracy
-  - [x] Ensure Prometheus can scrape application metrics
-  - [x] Update application documentation with metrics information
+- [ ] **4.3 Testing & Validation**
+  - [ ] Run test pipeline with SonarQube analysis
+  - [ ] Verify results appear in SonarQube dashboard
+  - [ ] Test Quality Gate passing/failing scenarios
 
-## 4. Jenkins Monitoring Integration
+## 5. Developer Workflow
+- [ ] **5.1 Process Integration**
+  - [ ] Update workflow documentation
+  - [ ] Configure SonarQube issue assignment
+  - [ ] Implement issue review process
 
-- [x] **4.1 Jenkins Metrics Configuration**
-  - [x] Configure Jenkins to expose Prometheus metrics
-  - [x] Set up pipeline performance monitoring
-  - [x] Enable build statistics collection
-
-- [x] **4.2 Metrics Collection Validation**
-  - [x] Confirm Prometheus is collecting Jenkins metrics
-  - [x] Verify pipeline execution metrics are available
-  - [x] Document available Jenkins metrics
-
-## 5. Dashboard Creation
-
-- [x] **5.1 Application Performance Dashboard**
-  - [x] Create Flask application monitoring dashboard
-  - [x] Implement panels for request rates, response times, and errors
-  - [x] Add version tracking and uptime visualization
-
-- [x] **5.2 CI/CD Pipeline Dashboard**
-  - [x] Build Jenkins performance dashboard
-  - [x] Create visualizations for build success rates and durations
-  - [x] Implement pipeline stage performance metrics
-
-- [x] **5.3 System Overview**
-  - [x] Develop a comprehensive system health dashboard
-  - [x] Combine key metrics from all components
-  - [x] Set up basic alerting thresholds
+- [ ] **5.2 Monitoring & Reporting**
+  - [ ] Set up periodic quality reports
+  - [ ] Add SonarQube metrics to existing dashboards
+  - [ ] Configure notifications for quality issues
 
 ## 6. Documentation & Finalization
+- [ ] **6.1 Documentation Updates**
+  - [ ] Update project README.md with SonarQube information
+  - [ ] Create usage guide for developers
+  - [ ] Document quality policies and thresholds
 
-- [x] **6.1 User Documentation**
-  - [x] Create dashboard usage guide
-  - [x] Document monitoring infrastructure
-  - [x] Update project README with monitoring information
+- [ ] **6.2 Training**
+  - [ ] Provide guidance on addressing common issues
+  - [ ] Document best practices for code quality
 
-- [x] **6.2 Final Integration**
-  - [x] Ensure all components work together correctly
-  - [x] Validate metrics accuracy
-  - [x] Confirm dashboard functionality
-  - [x] Verify Subject 3 requirements are fully met
+This roadmap will guide the implementation process, ensuring a structured approach to integrating SonarQube into the existing CI/CD pipeline.
