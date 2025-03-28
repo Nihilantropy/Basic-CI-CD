@@ -2,20 +2,21 @@
 # This file controls how your CI/CD pipeline runs when triggered automatically
 
 # Stage execution controls
-runTests: true
-runRuffCheck: true
-runBanditCheck: true
-updateVersion: true
-buildExecutable: true
-archiveExecutable: true
-uploadToNexus: false
-pushGitChanges: false
-createMergeRequest: false
+# runTests: true
+# runRuffCheck: true
+# runBanditCheck: true
+# runSonarAnalysis: true
+# updateVersion: true
+# buildExecutable: true
+# archiveExecutable: true
+# uploadToNexus: false
+# pushGitChanges: false
+# createMergeRequest: false
 
-# Integration controls
-enableGitlabStatus: true
-enableTelegram: true
-enableMetrics: true
+# # Integration controls
+# enableGitlabStatus: true
+# enableTelegram: true
+# enableMetrics: true
 
 # You can add branch-specific configurations in the future
 # branches:

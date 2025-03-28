@@ -13,3 +13,24 @@ target-version = "py39"
 
 # Include other directories if needed
 include = ["appflask/**/*.py", "tests/**/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+addopts = "--cov=appflask --cov-report=xml:coverage.xml --junitxml=test-results.xml"
+
+[tool.coverage.run]
+source = ["appflask"]
+omit = ["tests/*", "*/test_*.py", "*/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]

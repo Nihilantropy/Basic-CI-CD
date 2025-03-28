@@ -2,3 +2,6 @@ pytest
 pyinstaller
 ruff
 bandit
+coverage==7.4.3
+pytest-cov==4.1.0
+pysonar-scanner

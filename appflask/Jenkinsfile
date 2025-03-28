@@ -13,25 +13,25 @@ pipeline {
         timeout(time: 90, unit: 'SECONDS')
     }
 
-    parameters {
-        // Core execution controls - these will only be used for manual builds
-        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
-        booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
-        booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
-        booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
-        booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
-        booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
-        booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
-        booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
-        booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
+    // parameters {
+    //     // Core execution controls - these will only be used for manual builds
+    //     booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
+    //     booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
+    //     booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
+    //     booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
+    //     booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
+    //     booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
+    //     booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
+    //     booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
+    //     booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
         
-        // Integration controls
-        booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
-        booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
+    //     // Integration controls
+    //     booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
+    //     booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
 
-        // metrics
-        booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
-    }
+    //     // metrics
+    //     booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
+    // }
 
     environment {
         // Nexus configuration
@@ -46,6 +46,11 @@ pipeline {
         // Git configuration for pushing changes
         GITLAB_CREDENTIALS_ID = "gitlab-credentials"
         GITLAB_EMAIL = credentials('gitlab-email-crea')
+
+        // SonarQube configuration
+        SONAR_SERVER_URL = "http://sonarqube:9000"
+        SONAR_CREDENTIALS_ID = "sonarqube_token"
+        SONAR_PROJECT_KEY = "appflask"
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
@@ -74,57 +79,57 @@ pipeline {
         }
         
 
-        stage('Load Configuration') {
-            steps {
-                script {
-                    echo "Loading configuration from jenkins-config.yml if available..."
+        // stage('Load Configuration') {
+        //     steps {
+        //         script {
+        //             echo "Loading configuration from jenkins-config.yml if available..."
                     
-                    // Initialize global variables for stage control
-                    env.DO_RUN_TESTS = params.RUN_TESTS.toString()
-                    env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
-                    env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
-                    env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
-                    env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
-                    env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
-                    env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
-                    env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
-                    env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
-                    env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
-                    env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
-                    env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
+        //             // Initialize global variables for stage control
+        //             env.DO_RUN_TESTS = params.RUN_TESTS.toString()
+        //             env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
+        //             env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
+        //             env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
+        //             env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
+        //             env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
+        //             env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
+        //             env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
+        //             env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
+        //             env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
+        //             env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
+        //             env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
                     
-                    // Try to load the configuration file
-                    try {
-                        if (fileExists('jenkins-config.yml')) {
-                            echo "Found jenkins-config.yml file, loading configuration..."
-                            def config = readYaml(file: 'jenkins-config.yml')
-                            echo "Config loaded: ${config}"
+        //             // Try to load the configuration file
+        //             try {
+        //                 if (fileExists('jenkins-config.yml')) {
+        //                     echo "Found jenkins-config.yml file, loading configuration..."
+        //                     def config = readYaml(file: 'jenkins-config.yml')
+        //                     echo "Config loaded: ${config}"
                             
-                            // Override global variables with values from config file
-                            if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
-                            if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
-                            if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
-                            if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
-                            if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
-                            if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
-                            if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
-                            if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
-                            if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
-                            if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
-                            if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
-                            if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
+        //                     // Override global variables with values from config file
+        //                     if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
+        //                     if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
+        //                     if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
+        //                     if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
+        //                     if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
+        //                     if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
+        //                     if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
+        //                     if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
+        //                     if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
+        //                     if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
+        //                     if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
+        //                     if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
                             
-                            echo "Configuration values set from config file"
-                        } else {
-                            echo "No jenkins-config.yml file found, using parameter values"
-                        }
-                    } catch (Exception e) {
-                        echo "Error loading config file: ${e.getMessage()}"
-                        echo "Using parameter values instead"
-                    }
-                }
-            }
-        }
+        //                     echo "Configuration values set from config file"
+        //                 } else {
+        //                     echo "No jenkins-config.yml file found, using parameter values"
+        //                 }
+        //             } catch (Exception e) {
+        //                 echo "Error loading config file: ${e.getMessage()}"
+        //                 echo "Using parameter values instead"
+        //             }
+        //         }
+        //     }
+        // }
         
         stage('Pipeline Start') {
             steps {
@@ -136,19 +141,19 @@ pipeline {
                     utils.notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
                     
                     // Print selected stages for clarity
-                    echo "Running with the following configuration:"
-                    echo "Tests: ${DO_RUN_TESTS}"
-                    echo "Ruff Check: ${DO_RUN_RUFF_CHECK}"
-                    echo "Bandit Check: ${DO_RUN_BANDIT_CHECK}"
-                    echo "Update Version: ${DO_UPDATE_VERSION}"
-                    echo "Build Executable: ${DO_BUILD_EXECUTABLE}"
-                    echo "Archive Executable: ${DO_ARCHIVE_EXECUTABLE}"
-                    echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
-                    echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
-                    echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
-                    echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
-                    echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
-                    echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
+                    // echo "Running with the following configuration:"
+                    // echo "Tests: ${DO_RUN_TESTS}"
+                    // echo "Ruff Check: ${DO_RUN_RUFF_CHECK}"
+                    // echo "Bandit Check: ${DO_RUN_BANDIT_CHECK}"
+                    // echo "Update Version: ${DO_UPDATE_VERSION}"
+                    // echo "Build Executable: ${DO_BUILD_EXECUTABLE}"
+                    // echo "Archive Executable: ${DO_ARCHIVE_EXECUTABLE}"
+                    // echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
+                    // echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
+                    // echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
+                    // echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
+                    // echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
+                    // echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
 
                     // initialize Prometheus metrics if enabled
                     utils.initMetrics()
@@ -156,12 +161,42 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            when {
-                expression { 
-                    return env.DO_RUN_TESTS == 'true' 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    utils.runStage('sonar-analysis', 'Running SonarQube analysis... 🔍') {               
+                        // Run tests with coverage
+                        sh '''
+                        . /app/venv/bin/activate
+                        python -m pytest tests/ --cov=appflask --cov-report=xml --junitxml=test-results.xml
+                        '''
+                        
+                        // Run SonarQube analysis
+                        withSonarQubeEnv(credentialsId: env.SONAR_CREDENTIALS_ID, installationName: 'SonarQube') {
+                            sh '''
+                            . /app/venv/bin/activate
+                            pysonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.projectName=${SONAR_PROJECT_KEY} -Dsonar.projectVersion=${TIMESTAMP}
+                            '''
+                        }
+                    }
                 }
             }
+        }
+
+        stage('SonarQube Quality Gate') {
+            steps {
+                script {
+                    utils.runStage('sonar-quality-gate', 'Waiting for SonarQube Quality Gate... ⏳') {
+                        // Wait for the Quality Gate to complete
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run Tests') {
             steps {
                 script {
                     utils.runStage('tests', 'Running tests with pytest... 🧪') {
@@ -175,11 +210,6 @@ pipeline {
         }
 
         stage('Code Quality Check - Ruff') {
-            when {
-                expression { 
-                    return env.DO_RUN_RUFF_CHECK == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
@@ -193,11 +223,6 @@ pipeline {
         }
 
         stage('Security Check - Bandit') {
-            when {
-                expression { 
-                    return env.DO_RUN_BANDIT_CHECK == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('bandit', 'Running Bandit security check... 🔒') {
@@ -211,11 +236,6 @@ pipeline {
         }
 
         stage('Update Version Information') {
-            when {
-                expression { 
-                    return env.DO_UPDATE_VERSION == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('version-update', 'Updating version information... 📝') {
@@ -233,11 +253,6 @@ pipeline {
         }
 
         stage('Build Executable') {
-            when {
-                expression { 
-                    return env.DO_BUILD_EXECUTABLE == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('build', 'Building executable using PyInstaller... 🔧') {
@@ -261,11 +276,6 @@ pipeline {
         }
 
         stage('Archive Executable') {
-            when {
-                expression {
-                    return env.DO_ARCHIVE_EXECUTABLE == 'true' && env.DO_BUILD_EXECUTABLE == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('archive', 'Archiving the built executable... 📦') {
@@ -276,11 +286,6 @@ pipeline {
         }
 
         stage('Upload to Nexus') {
-            when {
-                expression { 
-                    return env.DO_UPLOAD_TO_NEXUS == 'true' && env.DO_BUILD_EXECUTABLE == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('nexus-upload', 'Uploading artifacts to Nexus... 🚀') {
@@ -327,11 +332,6 @@ pipeline {
         }
 
         stage('Push Changes & Create Tag') {
-            when {
-                expression { 
-                    return env.DO_PUSH_GIT_CHANGES == 'true' && env.DO_UPDATE_VERSION == 'true' 
-                }
-            }
             steps {
                 script {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤') {
@@ -358,46 +358,42 @@ pipeline {
                 }
             }
         }
-
-        stage('Create Merge Request') {
-            when {
-                expression { 
-                    return env.DO_CREATE_MERGE_REQUEST == 'true' && env.DO_PUSH_GIT_CHANGES == 'true'
-                }
-            }
-            steps {
-                script {
-                    utils.runStage('merge-request', 'Creating merge request to main branch... 🔄') {
-
-                        def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
-                        
-                        // Skip if we're already on main
-                        if (currentBranch != 'main') {
-                            // Create a descriptive title and message
-                            def mrTitle = "Merge ${currentBranch} to main - Version ${env.TIMESTAMP}"
-                            def mrDescription = """
-                            This merge request was automatically generated by the Jenkins pipeline.
-                            
-                            It includes changes for version ${env.TIMESTAMP} that have been tagged and should be merged to the main branch.
-                            
-                            Build: ${env.BUILD_URL}
-                            """
-                         
-                            // Create the merge request
-                            def response = utils.createMergeRequest("gitlab", "pipeline-project-group/pipeline-project", 
-                                        currentBranch, "main", mrTitle, mrDescription)
-                            
-                            sh 'echo ${response}'
-                            // Notify about successful MR creation
-                            utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.")
-                        } else {
-                            echo "Current branch is main, skipping merge request creation"
-                        }
-                    }
-                }
-            }
-        }
     }
+
+    //     stage('Create Merge Request') {
+    //         steps {
+    //             script {
+    //                 utils.runStage('merge-request', 'Creating merge request to main branch... 🔄') {
+
+    //                     def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
+                        
+    //                     // Skip if we're already on main
+    //                     if (currentBranch != 'main') {
+    //                         // Create a descriptive title and message
+    //                         def mrTitle = "Merge ${currentBranch} to main - Version ${env.TIMESTAMP}"
+    //                         def mrDescription = """
+    //                         This merge request was automatically generated by the Jenkins pipeline.
+                            
+    //                         It includes changes for version ${env.TIMESTAMP} that have been tagged and should be merged to the main branch.
+                            
+    //                         Build: ${env.BUILD_URL}
+    //                         """
+                         
+    //                         // Create the merge request
+    //                         def response = utils.createMergeRequest("gitlab", "pipeline-project-group/pipeline-project", 
+    //                                     currentBranch, "main", mrTitle, mrDescription)
+                            
+    //                         sh 'echo ${response}'
+    //                         // Notify about successful MR creation
+    //                         utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.")
+    //                     } else {
+    //                         echo "Current branch is main, skipping merge request creation"
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     post {
         success {
