@@ -48,9 +48,7 @@ pipeline {
         GITLAB_EMAIL = credentials('gitlab-email-crea')
 
         // SonarQube configuration
-        SONAR_SERVER_URL = "http://sonarqube:9000"
         SONAR_CREDENTIALS_ID = "sonarqube_token"
-        SONAR_PROJECT_KEY = "appflask"
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
@@ -161,21 +159,34 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Tests & Reports Generation') {
             steps {
                 script {
-                    utils.runStage('sonar-analysis', 'Running SonarQube analysis... 🔍') {               
-                        // Run tests with coverage
+                    utils.runStage('tests', 'Running tests with coverage... 🧪') {
                         sh '''
                         . /app/venv/bin/activate
-                        python -m pytest tests/ --cov=appflask --cov-report=xml --junitxml=test-results.xml
+                        python -m pytest tests/ --cov=appflask --cov-report=xml --junitxml=test-results.xml -v
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Upload') {
+            steps {
+                script {
+                    utils.runStage('sonar-upload', 'Uploading to SonarQube... 👹') {
+                        // Generate security report for SonarQube
+                        sh '''
+                        . /app/venv/bin/activate
+                        python -m bandit -r appflask -f json -o bandit-report.json || true
                         '''
                         
-                        // Run SonarQube analysis
+                        // Upload to SonarQube but don't wait for quality gate yet
                         withSonarQubeEnv(credentialsId: env.SONAR_CREDENTIALS_ID, installationName: 'SonarQube') {
                             sh '''
                             . /app/venv/bin/activate
-                            pysonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.projectName=${SONAR_PROJECT_KEY} -Dsonar.projectVersion=${TIMESTAMP}
+                            pysonar-scanner
                             '''
                         }
                     }
@@ -183,53 +194,44 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Gate') {
-            steps {
-                script {
-                    utils.runStage('sonar-quality-gate', 'Waiting for SonarQube Quality Gate... ⏳') {
-                        // Wait for the Quality Gate to complete
-                        timeout(time: 5, unit: 'MINUTES') {
-                            waitForQualityGate abortPipeline: true
+        stage('Parallel Tasks') {
+            parallel {
+                stage('Code Quality') {
+                    steps {
+                        script {
+                            utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
+                                sh '''
+                                . /app/venv/bin/activate
+                                python -m ruff check appflask --select ALL --ignore N999 --exclude "tests/*"
+                                '''
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                script {
-                    utils.runStage('tests', 'Running tests with pytest... 🧪') {
-                        sh '''
-                        . /app/venv/bin/activate
-                        python -m pytest tests/ --maxfail=1 --disable-warnings -v
-                        '''
+                
+                stage('Security Check') {
+                    steps {
+                        script {
+                            utils.runStage('bandit', 'Running Bandit security check... 🔒') {
+                                sh '''
+                                . /app/venv/bin/activate
+                                python -m bandit -r appflask -ll -iii
+                                '''
+                            }
+                        }
                     }
                 }
-            }
-        }
-
-        stage('Code Quality Check - Ruff') {
-            steps {
-                script {
-                    utils.runStage('ruff-check', 'Running Ruff code quality check... 🔍') {
-                        sh '''
-                        . /app/venv/bin/activate
-                        python -m ruff check appflask --select ALL --ignore N999 --exclude "tests/*"
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Security Check - Bandit') {
-            steps {
-                script {
-                    utils.runStage('bandit', 'Running Bandit security check... 🔒') {
-                        sh '''
-                        . /app/venv/bin/activate
-                        python -m bandit -r appflask -ll -iii
-                        '''
+                
+                stage('SonarQube Quality Gate') {
+                    steps {
+                        script {
+                            utils.runStage('sonar-quality-gate', 'Waiting for SonarQube Quality Gate... 🎱') {
+                                // Wait for the Quality Gate to complete
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitForQualityGate abortPipeline: true
+                                }
+                            }
+                        }
                     }
                 }
             }

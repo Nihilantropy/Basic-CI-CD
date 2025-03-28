@@ -512,14 +512,13 @@ basic-ci-cd/
 │       │   ├── Dockerfile
 │       │   └── init_scripts/     # Jenkins initialization
 │       ├── Nexus/                # Nexus configuration
-│       ├── Prometheus/           # Prometheus configuration
-│       │   ├── conf/
-│       │   │   ├── alert_rules/  # Alert definitions
-│       │   │   └── prometheus.yml.template
-│       │   ├── Dockerfile
-│       │   └── tools/
-│       └── Scripts/              # Testing scripts
-│           └── test_monitoring.sh  # Monitoring test script
+│       └──  Prometheus/           # Prometheus configuration
+│           ├── conf/
+│           │   ├── alert_rules/  # Alert definitions
+│           │   └── prometheus.yml.template
+│           ├── Dockerfile
+│           └── tools/
+│       
 │
 ├── Makefile                      # Build automation
 ├── README.md                     # This documentation
