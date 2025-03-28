@@ -15,7 +15,8 @@ PROJECT_SERVICES = gitlab \
 				   pushgateway \
 				   alertmanager \
 				   grafana \
-				   sonarqube
+				   sonarqube \
+				   postgres
 
 # List of CI/CD volumes and networks as defined in docker-compose.yml
 PROJECT_VOLUMES = gitlab_data \
@@ -29,10 +30,11 @@ PROJECT_VOLUMES = gitlab_data \
 				   grafana_data \
 				   sonarqube_data \
 				   sonarqube_logs \
-				   sonarqube_extentions
+				   sonarqube_extentions \
+				   postgres_data \
 
 
-PROJECT_NETWORKS = $(FOLDER_PREFIX)gitlab_network
+PROJECT_NETWORKS = $(FOLDER_PREFIX)shared_network
 
 all: setup images up show
 

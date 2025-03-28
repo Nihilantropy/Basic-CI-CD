@@ -7,10 +7,10 @@
   - [x] Update network configuration for service discovery
   - [x] Verify SonarQube UI accessibility
 
-- [ ] **1.2 Database Configuration**
-  - [ ] Set up PostgreSQL database for SonarQube
-  - [ ] Configure database credentials
-  - [ ] Validate database connection
+- [x] **1.2 Database Configuration**
+  - [x] Set up PostgreSQL database for SonarQube
+  - [x] Configure database credentials
+  - [x] Validate database connection
 
 ## 2. SonarQube Configuration
 - [ ] **2.1 Instance Setup**

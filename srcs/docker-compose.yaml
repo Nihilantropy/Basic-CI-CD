@@ -177,7 +177,7 @@ services:
   sonarqube:
     container_name: sonarqube
     image: sonarqube:9.9-community
-    restart: always
+    restart: on-failure
     ports:
       - "9000:9000"
     volumes:
@@ -186,6 +186,20 @@ services:
       - sonarqube_extensions:/opt/sonarqube/extensions
     env_file:
       - ./requirements/SonarQube/.env
+    depends_on:
+      - postgres
+    networks:
+      - shared_network
+
+  ### POSTGRESQL FOR SONARQUBE ###
+  postgres:
+    container_name: postgres
+    image: postgres:13
+    restart: on-failure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./requirements/SonarQube/postgres.env
     networks:
       - shared_network
 
@@ -206,3 +220,4 @@ volumes:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
+  postgres_data:

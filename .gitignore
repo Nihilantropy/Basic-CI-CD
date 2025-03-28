@@ -1,6 +1,5 @@
 venv
 .DS_Store
-.env
 __pycache__
 .pytest_cache
 .ruff_cache
@@ -8,3 +7,4 @@ jenkins-cli.jar
 build/
 dist/
 appflask.egg-info
+*.env
