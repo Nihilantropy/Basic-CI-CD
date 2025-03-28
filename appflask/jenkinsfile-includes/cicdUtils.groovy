@@ -567,7 +567,7 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
             1, 
             [
                 "job": env.JOB_NAME, 
-                "build": env.BUILD_NUMBER, 
+                "build": env.BUILD_NUMBER,
                 "stage": stageName,
                 "branch": branch
             ]
