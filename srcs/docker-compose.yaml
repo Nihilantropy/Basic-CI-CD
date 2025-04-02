@@ -5,7 +5,7 @@ services:
     restart: always
     ports:
       - "8080:80"
-      - "443:443"
+      - "4433:443"
       - "4242:22"
     volumes:
       - gitlab_data:/var/opt/gitlab

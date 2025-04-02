@@ -8,3 +8,6 @@ build/
 dist/
 appflask.egg-info
 *.env
+.terraform
+\~
+terraform.tfstate*
