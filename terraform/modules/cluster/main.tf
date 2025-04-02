@@ -15,6 +15,7 @@ resource "kind_cluster" "local" {
         "kind: InitConfiguration\nnodeRegistration:\n  kubeletExtraArgs:\n    node-labels: \"ingress-ready=true\"\n"
       ]
       
+      # Essential port mappings
       extra_port_mappings {
         container_port = 80
         host_port      = 80
@@ -26,11 +27,25 @@ resource "kind_cluster" "local" {
       }
     }
     
-    # Worker nodes
+    # Worker nodes with select NodePort mappings
     dynamic "node" {
       for_each = range(var.worker_count)
       content {
         role = "worker"
+        
+        # Common NodePort for application access
+        extra_port_mappings {
+          container_port = 30080
+          host_port      = 30080
+          protocol       = "TCP"
+        }
+        
+        # Add optional secondary NodePort if needed
+        extra_port_mappings {
+          container_port = 30443
+          host_port      = 30443 + node.key  # Use unique host ports per worker
+          protocol       = "TCP"
+        }
       }
     }
   }

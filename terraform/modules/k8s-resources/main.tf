@@ -49,12 +49,3 @@ resource "kubernetes_endpoints" "nexus_endpoint" {
 
   depends_on = [var.cluster_ready]
 }
-
-# Create namespace for application deployment
-resource "kubernetes_namespace" "app" {
-  metadata {
-    name = var.app_namespace
-  }
-
-  depends_on = [var.cluster_ready]
-}

@@ -62,7 +62,8 @@ provider "registry.terraform.io/hashicorp/local" {
 }
 
 provider "registry.terraform.io/hashicorp/null" {
-  version = "3.2.3"
+  version     = "3.2.3"
+  constraints = "~> 3.2.0"
   hashes = [
     "h1:+AnORRgFbRO6qqcfaQyeX80W0eX3VmjadjnUFUJTiXo=",
     "zh:22d062e5278d872fe7aed834f5577ba0a5afe34a3bdac2b81f828d8d3e6706d2",

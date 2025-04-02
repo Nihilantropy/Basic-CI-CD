@@ -17,6 +17,13 @@ terraform {
       source  = "hashicorp/local"
       version = "~> 2.4.0"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2.0"
+    }
   }
   required_version = ">= 1.0.0"
 }
+
+# Configuration for Kubernetes and Helm providers will be handled dynamically in the main.tf
+# This prevents trying to use incomplete information during the planning phase
