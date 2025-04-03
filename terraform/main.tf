@@ -64,10 +64,10 @@ module "flux" {
   source                 = "./modules/k8s_resources/flux"
   flux_namespace         = "flux-system"
   gitops_repo_branch     = "main"
-  gitops_repo_url        = "ssh://192.168.1.27:4242/pipeline-project-group/pipeline-project.git"
   helm_chart_path        = local.chart_path
-  flux_private_key_path  = "~/.flux/keys/flux-gitlab"
   kubeconfig_path        = abspath(module.cluster.kubeconfig_path)
+  flux_gitlab_token      = "~/.tokens/gitlab/gitlab.local/personal/token.txt"
+  gitops_repo_url        = "http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git"
 
   depends_on = [
     null_resource.cluster_ready_check,

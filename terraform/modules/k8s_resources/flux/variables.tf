@@ -31,6 +31,7 @@ variable "kubeconfig_path" {
 variable "gitops_repo_url" {
   description = "URL of the Git repository containing GitOps configuration"
   type        = string
+  default     = "http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git"
 }
 
 variable "gitops_repo_branch" {
@@ -76,22 +77,16 @@ variable "app_agent_name" {
   default     = "TerraformFlux"
 }
 
-# SSH key variables for GitLab access
+# GitLab access
 
-variable "flux_private_key_path" {
-  description = "Path to private SSH key for Flux GitLab access"
+variable "flux_gitlab_username" {
+  description = "GitLab username for authentication"
   type        = string
-  default     = "~/.flux/keys/flux-gitlab"
+  default     = "oauth2"
 }
 
-variable "flux_public_key_path" {
-  description = "Path to private SSH key for Flux GitLab access"
+variable "flux_gitlab_token" {
+  description = "GitLab access token for authentication"
   type        = string
-  default     = "~/.flux/keys/flux-gitlab.pub"
-}
-
-variable "flux_known_hosts_path" {
-  description = "Path to known_hosts file for GitLab SSH verification"
-  type        = string
-  default     = "~/.flux/known_hosts"
+  sensitive   = true
 }

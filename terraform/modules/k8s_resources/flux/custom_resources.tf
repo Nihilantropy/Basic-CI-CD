@@ -11,7 +11,7 @@ resource "kubectl_manifest" "flux_git_repository" {
       interval = var.sync_interval
       url      = var.gitops_repo_url
       secretRef = {
-        name = kubernetes_secret.flux_gitlab_ssh.metadata[0].name
+        name = kubernetes_secret.flux_gitlab_auth.metadata[0].name
       }
       ref = {
         branch = var.gitops_repo_branch
@@ -19,12 +19,12 @@ resource "kubectl_manifest" "flux_git_repository" {
     }
   })
 
-  depends_on = [null_resource.wait_for_flux_crds]
-  
-  # The kubectl provider has built-in wait/retry functionality
+  depends_on = [null_resource.wait_for_flux_crds, kubernetes_secret.flux_gitlab_auth]
   wait = true
   server_side_apply = true
+  force_conflicts = true
 }
+
 
 # Similarly replace other kubernetes_manifest resources
 resource "kubectl_manifest" "git_repository_tag_tracking" {
@@ -39,7 +39,7 @@ resource "kubectl_manifest" "git_repository_tag_tracking" {
       interval = var.sync_interval
       url      = var.gitops_repo_url
       secretRef = {
-        name = kubernetes_secret.flux_gitlab_ssh.metadata[0].name
+        name = kubernetes_secret.flux_gitlab_auth.metadata[0].name
       }
       ref = {
         # For numeric tags, we can use semver with custom sorting
@@ -48,9 +48,10 @@ resource "kubectl_manifest" "git_repository_tag_tracking" {
     }
   })
 
-  depends_on = [null_resource.wait_for_flux_crds]
+  depends_on = [null_resource.wait_for_flux_crds, kubernetes_secret.flux_gitlab_auth]
   wait = true
   server_side_apply = true
+  force_conflicts = true
 }
 
 resource "kubectl_manifest" "flux_helm_release" {

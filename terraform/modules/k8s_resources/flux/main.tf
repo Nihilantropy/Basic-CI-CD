@@ -8,22 +8,6 @@ resource "kubernetes_namespace" "flux_system" {
   }
 }
 
-# Create a secret for GitLab SSH access
-resource "kubernetes_secret" "flux_gitlab_ssh" {
-  metadata {
-    name      = "flux-gitlab-ssh"
-    namespace = kubernetes_namespace.flux_system.metadata[0].name
-  }
-
-  data = {
-    "identity"    = file(var.flux_private_key_path)
-    "identity.pub" = file(var.flux_public_key_path)
-    "known_hosts" = file(var.flux_known_hosts_path)
-  }
-
-  depends_on = [kubernetes_namespace.flux_system]
-}
-
 # Install Flux using Helm
 resource "helm_release" "flux" {
   name       = "flux"
@@ -39,6 +23,23 @@ resource "helm_release" "flux" {
 
   wait    = true
   timeout = var.helm_timeout
+
+  depends_on = [kubernetes_namespace.flux_system]
+}
+
+resource "kubernetes_secret" "flux_gitlab_auth" {
+  metadata {
+    name      = "flux-gitlab-auth"
+    namespace = kubernetes_namespace.flux_system.metadata[0].name
+  }
+
+  # For basic authentication with HTTP, we need username and password
+  data = {
+    username = var.flux_gitlab_username
+    password = var.flux_gitlab_token
+  }
+
+  type = "Opaque"
 
   depends_on = [kubernetes_namespace.flux_system]
 }
