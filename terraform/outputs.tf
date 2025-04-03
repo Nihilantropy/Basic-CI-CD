@@ -23,17 +23,17 @@ output "nexus_namespace" {
 }
 
 # Flux outputs
-# output "flux_namespace" {
-#   description = "Namespace where Flux is installed"
-#   value       = module.flux.flux_namespace
-# }
+output "flux_namespace" {
+  description = "Namespace where Flux is installed"
+  value       = module.flux.flux_namespace
+}
 
-# output "flux_installed" {
-#   description = "Whether Flux was successfully installed"
-#   value       = module.flux.flux_installed
-# }
+output "flux_installed" {
+  description = "Whether Flux was successfully installed"
+  value       = module.flux.flux_installed
+}
 
-# output "gitops_repo_name" {
-#   description = "Name of the configured GitRepository"
-#   value       = module.flux.gitops_repo_name
-# }
+output "gitops_repo_name" {
+  description = "Name of the configured GitRepository"
+  value       = module.flux.gitops_repo_name
+}

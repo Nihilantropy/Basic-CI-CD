@@ -9,6 +9,7 @@ dist/
 appflask.egg-info
 *.env
 \~
+.terraform.lock.hcl
 .terraform*
 terraform.tfstate*
 deployment.tfplan

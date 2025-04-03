@@ -39,6 +39,14 @@ provider "helm" {
   }
 }
 
+provider "kubectl" {
+  host                   = module.cluster.endpoint
+  cluster_ca_certificate = module.cluster.cluster_ca_certificate
+  client_certificate     = module.cluster.client_certificate
+  client_key             = module.cluster.client_key
+  load_config_file       = false
+}
+
 # Step 5: Create Kubernetes resources
 module "nexus" {
   source          = "./modules/k8s_resources/nexus"
@@ -52,15 +60,17 @@ module "nexus" {
 
 
 # Step 6: Install Flux
-# module "flux" {
-#   source               = "./modules/k8s_resources/flux"
-#   flux_namespace       = "flux-system"
-#   gitops_repo_url      = var.gitops_repo_url
-#   gitops_repo_branch   = var.gitops_repo_branch
-#   gitops_app_path      = var.gitops_app_path
-  
-#   depends_on = [
-#     null_resource.cluster_ready_check,
-#     module.nexus
-#   ]
-# }
+module "flux" {
+  source                 = "./modules/k8s_resources/flux"
+  flux_namespace         = "flux-system"
+  gitops_repo_branch     = "main"
+  gitops_repo_url        = "ssh://192.168.1.27:4242/pipeline-project-group/pipeline-project.git"
+  helm_chart_path        = local.chart_path
+  flux_private_key_path  = "~/.flux/keys/flux-gitlab"
+  kubeconfig_path        = abspath(module.cluster.kubeconfig_path)
+
+  depends_on = [
+    null_resource.cluster_ready_check,
+    module.nexus
+  ]
+}

@@ -19,8 +19,3 @@ output "gitops_repo_name" {
   description = "Name of the configured GitRepository"
   value       = var.gitops_repo_name
 }
-
-output "gitops_kustomization_name" {
-  description = "Name of the configured Kustomization"
-  value       = var.gitops_kustomization_name
-}

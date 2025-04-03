@@ -16,4 +16,7 @@ Starting from CI/CD projects 3, integrate the following requirements:
 ## 4 - Adding Flux  
 ● Once your Terraform-based cluster is up and running, integrate **Flux** to automate the deployment process. Configure Flux to monitor your GitLab repository for new tags or changes, and trigger an automatic Helm upgrade when a new release is detected. This setup will ensure your deployments are fully automated and continuously in sync with your latest code changes. GitOps for the win! 🔄
 
+## 5 - Documentation
+● It's time for some seroius documentation! Imagine you have to give access to someone else to you Terraform managed cluster.
+
 Happy coding and automating! 😊
