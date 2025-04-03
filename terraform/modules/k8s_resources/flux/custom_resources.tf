@@ -1,4 +1,4 @@
-# Use kubectl_manifest instead of kubernetes_manifest
+# In modules/k8s_resources/flux/custom_resources.tf
 resource "kubectl_manifest" "flux_git_repository" {
   yaml_body = yamlencode({
     apiVersion = "source.toolkit.fluxcd.io/v1"
@@ -9,41 +9,12 @@ resource "kubectl_manifest" "flux_git_repository" {
     }
     spec = {
       interval = var.sync_interval
-      url      = var.gitops_repo_url
+      url      = var.gitops_repo_url  # Use just the base URL without credentials
       secretRef = {
         name = kubernetes_secret.flux_gitlab_auth.metadata[0].name
       }
       ref = {
         branch = var.gitops_repo_branch
-      }
-    }
-  })
-
-  depends_on = [null_resource.wait_for_flux_crds, kubernetes_secret.flux_gitlab_auth]
-  wait = true
-  server_side_apply = true
-  force_conflicts = true
-}
-
-
-# Similarly replace other kubernetes_manifest resources
-resource "kubectl_manifest" "git_repository_tag_tracking" {
-  yaml_body = yamlencode({
-    apiVersion = "source.toolkit.fluxcd.io/v1"
-    kind       = "GitRepository"
-    metadata = {
-      name      = "${var.gitops_repo_name}-tags"
-      namespace = var.flux_namespace
-    }
-    spec = {
-      interval = var.sync_interval
-      url      = var.gitops_repo_url
-      secretRef = {
-        name = kubernetes_secret.flux_gitlab_auth.metadata[0].name
-      }
-      ref = {
-        # For numeric tags, we can use semver with custom sorting
-        semver = ">0.0.0-0" # This matches any tag and will sort numerically
       }
     }
   })
@@ -66,32 +37,38 @@ resource "kubectl_manifest" "flux_helm_release" {
       interval = var.sync_interval
       chart = {
         spec = {
-          chart = var.helm_chart_path
+          chart = var.helm_chart_path  # Path to helm chart in the repo
           sourceRef = {
             kind = "GitRepository"
-            name = "${var.gitops_repo_name}-tags"
+            name = var.gitops_repo_name
           }
-          interval = var.sync_interval
         }
       }
+      # Values to use for the Helm chart
+      values = {
+        replicaCount = var.app_replica_count
+        agentName    = var.app_agent_name
+        flaskEnv     = "production"
+        nodePort     = 30080
+        # This can include any values you want to set
+      }
+      # Install or upgrade configuration
+      install = {
+        createNamespace = true
+        remediation = {
+          retries = 3
+        }
+      }
+      # Automatic upgrades when source changes
       upgrade = {
         remediation = {
           remediateLastFailure = true
         }
       }
-      install = {
-        remediation = {
-          retries = 3
-        }
-      }
-      values = {
-        replicaCount = var.app_replica_count
-        agentName    = var.app_agent_name
-      }
     }
   })
 
-  depends_on = [kubectl_manifest.git_repository_tag_tracking]
+  depends_on = [kubectl_manifest.flux_git_repository]
   wait = true
   server_side_apply = true
 }

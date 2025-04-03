@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Release.Name }}
+          image: ubuntu:22.04
+          command: ["/bin/sh", "-c"]
+          args:
+            - /launch-flask-app.sh
+          env:
+            - name: AGENT_NAME
+              value: {{ .Values.agentName }}
+            - name: FLASK_ENV
+              value: {{ .Values.flaskEnv }}
+            - name: APP_VERSION
+              value: {{ .Values.appVersion }}
+          ports:
+            - containerPort: 5000
+              name: http-metrics
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources: {}
+          volumeMounts:
+          - name: flask-app-script
+            mountPath: /launch-flask-app.sh
+            subPath: launch-flask-app.sh
+      volumes:
+      - name: flask-app-script
+        configMap:
+          name: {{ .Release.Name }}-cm
+          defaultMode: 0755

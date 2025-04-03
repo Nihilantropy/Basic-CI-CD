@@ -26,10 +26,6 @@ resource "null_resource" "wait_for_flux_crds" {
       
       # Additionally wait for the controller to be ready
       kubectl -n ${var.flux_namespace} wait deployment/source-controller --for=condition=Available=True --timeout=2m
-      
-      # Extra delay to ensure full readiness
-      echo "CRDs found, waiting 15 more seconds for controllers to be fully operational..."
-      sleep 15
     EOT
   }
 

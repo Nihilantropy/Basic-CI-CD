@@ -1,0 +1,16 @@
+# Application version to use
+# Use "latest" for the most recent version or a specific timestamp (e.g., "20240317123456")
+appVersion: "latest"
+
+# Flask environment setting
+# Options: development, testing, production, default (development)
+flaskEnv: "production"
+
+# Number of replicas to deploy
+replicaCount: 3
+
+# The name displayed in the application response
+agentName: "Charizard"
+
+# NodePort for exposing the service externally
+nodePort: 30080

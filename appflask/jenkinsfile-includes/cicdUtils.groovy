@@ -638,21 +638,28 @@ def updateVersionInfo() {
 }
 
 def createReleaseTag() {
-    echo "Creating and pushing release tag..."
+    echo "Creating and pushing release tags..."
     
     def timestamp = env.TIMESTAMP
     sh """
-        # Create tag with proper syntax
+        # Create timestamp tag with proper syntax
         git tag -a ${timestamp} -m "Release ${timestamp}"
+        
+        # Create or update 'latest' tag to point to the same commit
+        git tag -f latest -m "Latest release (${timestamp})"
     """
     
     withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
         sh """
+            # Push the timestamp tag
             git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git refs/tags/${timestamp}
+            
+            # Force push the latest tag (since we're updating it)
+            git push -f http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git refs/tags/latest
         """
     }
     
-    echo "Release tag ${timestamp} created and pushed"
+    echo "Release tags ${timestamp} and 'latest' created and pushed"
 }
 
 def createMergeRequest(String gitLabHost, String projectPath, String sourceBranch, String targetBranch, String title, String description) {
