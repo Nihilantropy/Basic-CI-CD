@@ -40,22 +40,27 @@ provider "helm" {
 }
 
 # Step 5: Create Kubernetes resources
-module "k8s_resources" {
-  source          = "./modules/k8s-resources"
+module "nexus" {
+  source          = "./modules/k8s_resources/nexus"
   nexus_namespace = var.nexus_namespace
   host_machine_ip = local.host_machine_ip
+  service_name    = "nexus-service"
+  service_port    = 8082
   
-  # This explicit dependency ensures the cluster is ready
-  # before attempting to create resources
   depends_on = [null_resource.cluster_ready_check]
 }
 
-# Step 6: Deploy application with Helm
-module "app_deployment" {
-  source       = "./modules/app-deployment"
-  chart_path   = local.chart_path
+
+# Step 6: Install Flux
+# module "flux" {
+#   source               = "./modules/k8s_resources/flux"
+#   flux_namespace       = "flux-system"
+#   gitops_repo_url      = var.gitops_repo_url
+#   gitops_repo_branch   = var.gitops_repo_branch
+#   gitops_app_path      = var.gitops_app_path
   
-  # Dependencies explicitly defined - app deployment can only happen
-  # after Kubernetes resources are created
-  depends_on = [module.k8s_resources]
-}
+#   depends_on = [
+#     null_resource.cluster_ready_check,
+#     module.nexus
+#   ]
+# }

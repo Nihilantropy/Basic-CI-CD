@@ -1,15 +1,16 @@
-# modules/k8s-resources/main.tf
+# modules/k8s_resources/nexus/main.tf
+
+# Create Nexus namespace
 resource "kubernetes_namespace" "nexus" {
   metadata {
     name = var.nexus_namespace
   }
-
-  depends_on = [var.cluster_ready]
 }
 
+# Create Nexus headless service
 resource "kubernetes_service" "nexus_headless" {
   metadata {
-    name      = "nexus-service"
+    name      = var.service_name
     namespace = kubernetes_namespace.nexus.metadata[0].name
   }
   
@@ -17,21 +18,20 @@ resource "kubernetes_service" "nexus_headless" {
     selector = {}  # Empty selector for headless service
     
     port {
-      port        = 8082
-      target_port = 8082
+      port        = var.service_port
+      target_port = var.service_port
       name        = "http"
       protocol    = "TCP"
     }
     
     cluster_ip = "None"  # This makes it a headless service
   }
-
-  depends_on = [var.cluster_ready]
 }
 
+# Create Nexus endpoint
 resource "kubernetes_endpoints" "nexus_endpoint" {
   metadata {
-    name      = "nexus-service"
+    name      = var.service_name
     namespace = kubernetes_namespace.nexus.metadata[0].name
   }
   
@@ -41,11 +41,9 @@ resource "kubernetes_endpoints" "nexus_endpoint" {
     }
     
     port {
-      port     = 8082
+      port     = var.service_port
       name     = "http"
       protocol = "TCP"
     }
   }
-
-  depends_on = [var.cluster_ready]
 }
