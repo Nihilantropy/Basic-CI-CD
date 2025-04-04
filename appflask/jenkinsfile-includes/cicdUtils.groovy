@@ -2,26 +2,26 @@
 
 // Helper function to update GitLab status
 def updateGitLabStatus(String name, String state) {
-    // def enableUpdates = env.DO_ENABLE_GITLAB_STATUS?.toBoolean() ?: false
+    def enableUpdates = env.DO_ENABLE_GITLAB_STATUS?.toBoolean() ?: false
 
-    // if (enableUpdates) {
+    if (enableUpdates) {
         updateGitlabCommitStatus name: name, state: state
-    // } else {
-    //     echo "GitLab status updates disabled. Would have set ${name} to ${state}."
-    // }
+    } else {
+        echo "GitLab status updates disabled. Would have set ${name} to ${state}."
+    }
 }
 
 // Helper function to send notifications
 def notify(String message) {
     echo message
 
-    // def enableTelegram = env.DO_ENABLE_TELEGRAM?.toBoolean() ?: false
+    def enableTelegram = env.DO_ENABLE_TELEGRAM?.toBoolean() ?: false
 
-    // if (enableTelegram) {
+    if (enableTelegram) {
         sendTelegramMessage(message)
-    // } else {
-    //     echo "Telegram notifications disabled. Would have sent: ${message}"
-    // }
+    } else {
+        echo "Telegram notifications disabled. Would have sent: ${message}"
+    }
 }
 
 // Send message to Telegram
@@ -43,12 +43,12 @@ def sendTelegramMessage(String message) {
 
 // Initialize metrics collection for the build
 def initMetrics() {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     echo "Metrics collection disabled. Skipping metrics initialization."
-    //     return
-    // }
+    if (!enableMetrics) {
+        echo "Metrics collection disabled. Skipping metrics initialization."
+        return
+    }
     
     // Record build start time - used for duration calculation
     env.METRICS_BUILD_START_TIME = System.currentTimeMillis().toString()
@@ -111,9 +111,9 @@ def initMetrics() {
 def recordStageCompletion(String stageName, long duration, boolean success) {
     def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -152,11 +152,11 @@ def recordStageCompletion(String stageName, long duration, boolean success) {
 
 // Helper function to output metric in Prometheus format and push to Pushgateway
 def prometheusMetric(String name, String type, def value, Map<String,String> labels = [:]) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     def labelStr = labels.collect { k, v -> 
         "${k}=\"${v.toString().replace('\\', '\\\\').replace('"', '\\"')}\""
@@ -171,11 +171,11 @@ def prometheusMetric(String name, String type, def value, Map<String,String> lab
 
 // Record test results metrics
 def recordTestResults(int passed, int failed, int skipped) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -220,11 +220,11 @@ def recordTestResults(int passed, int failed, int skipped) {
 
 // Record test duration
 def recordTestDuration(long duration) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -244,11 +244,11 @@ def recordTestDuration(long duration) {
 
 // Record code quality metrics - Ruff issues
 def recordRuffIssues(int errorCount, int warningCount) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -281,11 +281,11 @@ def recordRuffIssues(int errorCount, int warningCount) {
 
 // Record code security metrics - Bandit vulnerabilities
 def recordBanditVulnerabilities(int highCount, int mediumCount, int lowCount) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -330,11 +330,11 @@ def recordBanditVulnerabilities(int highCount, int mediumCount, int lowCount) {
 
 // Record artifact metrics
 def recordArtifactSize(String artifactId, long sizeBytes) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -355,11 +355,11 @@ def recordArtifactSize(String artifactId, long sizeBytes) {
 
 // Record Nexus upload status
 def recordNexusUploadStatus(String artifactId, String version, boolean success) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -382,11 +382,11 @@ def recordNexusUploadStatus(String artifactId, String version, boolean success) 
 
 // Record resource utilization
 def recordResourceUtilization(String resourceType, double value) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
@@ -407,11 +407,11 @@ def recordResourceUtilization(String resourceType, double value) {
 
 // Record executor utilization
 def recordExecutorUtilization(String executorName, double utilizationPercent) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Record executor utilization metric
     prometheusMetric(
@@ -427,12 +427,12 @@ def recordExecutorUtilization(String executorName, double utilizationPercent) {
 
 // Finalize metrics collection at the end of the build
 def finalizeMetrics(String result) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     echo "Metrics collection disabled. Skipping metrics finalization."
-    //     return
-    // }
+    if (!enableMetrics) {
+        echo "Metrics collection disabled. Skipping metrics finalization."
+        return
+    }
     
     def buildEndTime = System.currentTimeMillis()
     def buildDuration = buildEndTime - (env.METRICS_BUILD_START_TIME as Long)
@@ -499,11 +499,11 @@ def finalizeMetrics(String result) {
 
 // Send metric to Pushgateway
 def pushMetricToGateway(String name, String type, def value, Map<String,String> labels = [:]) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     
-    // if (!enableMetrics) {
-    //     return
-    // }
+    if (!enableMetrics) {
+        return
+    }
     
     // Create labels string for metric content
     def labelStr = labels.collect { k, v -> 
@@ -552,14 +552,14 @@ ${name}{${labelStr}} ${value.toString()}
 
 // Enhanced runStage function with built-in metrics collection
 def runStage(String stageName, String notificationMessage, Closure stageBody) {
-    // def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
+    def enableMetrics = env.DO_ENABLE_METRICS?.toBoolean() ?: false
     def stageStartTime = 0
     
     // Get git branch information if available
     def branch = env.GIT_BRANCH ?: "unknown"
     
     // Conditionally record stage start
-    // if (enableMetrics) {
+    if (enableMetrics) {
         stageStartTime = System.currentTimeMillis()
         prometheusMetric(
             "jenkins_pipeline_stage_started_total", 
@@ -572,7 +572,7 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
                 "branch": branch
             ]
         )
-    // }
+    }
     
     // Update GitLab status
     updateGitLabStatus(stageName, 'running')
@@ -585,10 +585,10 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
         stageBody()
         
         // Conditionally record stage success
-        // if (enableMetrics) {
+        if (enableMetrics) {
             def stageDuration = System.currentTimeMillis() - stageStartTime
             recordStageCompletion(stageName, stageDuration, true)
-        // }
+        }
         
         // Update GitLab status
         updateGitLabStatus(stageName, 'success')
@@ -598,10 +598,10 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
         
     } catch (Exception e) {
         // Conditionally record stage failure
-        // if (enableMetrics) {
+        if (enableMetrics) {
             def stageDuration = System.currentTimeMillis() - stageStartTime
             recordStageCompletion(stageName, stageDuration, false)
-        // }
+        }
         
         // Update GitLab status for failure
         updateGitLabStatus(stageName, 'failed')
@@ -662,27 +662,73 @@ def createReleaseTag() {
     echo "Release tags ${timestamp} and 'latest' created and pushed"
 }
 
-def createMergeRequest(String gitLabHost, String projectPath, String sourceBranch, String targetBranch, String title, String description) {
-    echo "Creating merge request from ${sourceBranch} to ${targetBranch}..."
+def updateHelmBranch(String helmBranch, String version) {
+    // Store current state to return to later
+    def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
+    def originalCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
     
-    // GitLab's API requires URL-encoded values
-    def encodedTitle = URLEncoder.encode(title, "UTF-8")
-    def encodedDescription = URLEncoder.encode(description, "UTF-8")
+    echo "Updating Helm branch '${helmBranch}' with version ${version} from ${currentBranch}..."
+    
+    // Verify helm directory exists
+    if (!fileExists('helm/')) {
+        error "Helm directory not found in the current branch"
+    }
+    
+    // Set up Git identity
+    sh "git config user.name 'Jenkins Pipeline'"
+    sh "git config user.email 'jenkins@example.com'"
     
     withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
-        def response = sh(script: '''
-            curl -s -X POST \
-            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
-            "http://''' + gitLabHost + '''/api/v4/projects/''' + URLEncoder.encode(projectPath, "UTF-8") + '''/merge_requests" \
-            -d "source_branch=''' + sourceBranch + '''" \
-            -d "target_branch=''' + targetBranch + '''" \
-            -d "title=''' + encodedTitle + '''" \
-            -d "description=''' + encodedDescription + '''" \
-            -d "remove_source_branch=false"
-        ''', returnStdout: true).trim()
+        def gitlabUrl = "http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git"
         
-        echo "Merge request creation completed"
-        return response
+        try {
+            // Step 1: Delete remote branch if it exists
+            echo "Deleting remote branch ${helmBranch} if it exists..."
+            sh """
+                git push ${gitlabUrl} --delete ${helmBranch} || true
+            """
+            
+            // Step 2: Create a new branch
+            echo "Creating new branch ${helmBranch}..."
+            sh "git checkout -b ${helmBranch}"
+            
+            // Step 3: Remove everything except helm directory and .git
+            echo "Isolating Helm directory..."
+            sh """
+                # Find and remove all files/dirs except helm/ and .git/
+                find . -mindepth 1 -maxdepth 1 -not -name '.git' -not -name 'helm' -exec rm -rf {} \\;
+                
+                # Update version info in the Helm directory
+                mkdir -p helm/appflask/
+                echo "${version}" > helm/appflask/version.info
+                
+                # Add a simple README
+                echo "# Helm Charts for Flux CD\\n\\nThis branch contains only Helm charts for deployment via Flux CD.\\n\\nLast updated: \$(date)\\nVersion: ${version}\\nSource: ${currentBranch}" > README.md
+            """
+            
+            // Stage and commit the changes
+            echo "Committing changes..."
+            sh """
+                git add -A
+                git commit -m "Update Helm charts to version ${version} from ${currentBranch}"
+            """
+            
+            // Push the new branch
+            echo "Pushing branch to remote repository..."
+            sh """
+                git push -f ${gitlabUrl} ${helmBranch}
+            """
+            
+            echo "Successfully created fresh ${helmBranch} branch with latest Helm charts"
+            return true
+            
+        } catch (Exception e) {
+            echo "Failed to update Helm branch: ${e.message}"
+            throw e
+        } finally {
+            // Return to original state
+            sh "git checkout ${originalCommit}"
+        }
     }
 }
 

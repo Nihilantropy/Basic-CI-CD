@@ -9,7 +9,7 @@ resource "kubectl_manifest" "flux_git_repository" {
     }
     spec = {
       interval = var.sync_interval
-      url      = var.gitops_repo_url  # Use just the base URL without credentials
+      url      = var.gitops_repo_url
       secretRef = {
         name = kubernetes_secret.flux_gitlab_auth.metadata[0].name
       }
@@ -27,7 +27,7 @@ resource "kubectl_manifest" "flux_git_repository" {
 
 resource "kubectl_manifest" "flux_helm_release" {
   yaml_body = yamlencode({
-    apiVersion = "helm.toolkit.fluxcd.io/v2beta1"
+    apiVersion = "helm.toolkit.fluxcd.io/v2beta2"  # Updated to v2beta2
     kind       = "HelmRelease"
     metadata = {
       name      = var.helm_release_name
@@ -35,31 +35,29 @@ resource "kubectl_manifest" "flux_helm_release" {
     }
     spec = {
       interval = var.sync_interval
+      targetNamespace = var.app_namespace
       chart = {
         spec = {
-          chart = var.helm_chart_path  # Path to helm chart in the repo
+          chart = var.helm_chart_path
           sourceRef = {
             kind = "GitRepository"
             name = var.gitops_repo_name
           }
         }
       }
-      # Values to use for the Helm chart
-      values = {
-        replicaCount = var.app_replica_count
-        agentName    = var.app_agent_name
-        flaskEnv     = "production"
-        nodePort     = 30080
-        # This can include any values you want to set
-      }
-      # Install or upgrade configuration
+      # Use values.yaml from the Git repository (uncomment to use custom values applied by terraform)
+      # values = {
+      #   replicaCount = var.app_replica_count
+      #   agentName    = var.app_agent_name
+      #   flaskEnv     = var.app_env
+      #   nodePort     = var.service_port
+      # }
       install = {
         createNamespace = true
         remediation = {
           retries = 3
         }
       }
-      # Automatic upgrades when source changes
       upgrade = {
         remediation = {
           remediateLastFailure = true
@@ -67,7 +65,7 @@ resource "kubectl_manifest" "flux_helm_release" {
       }
     }
   })
-
+  
   depends_on = [kubectl_manifest.flux_git_repository]
   wait = true
   server_side_apply = true

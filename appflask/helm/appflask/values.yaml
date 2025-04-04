@@ -7,10 +7,10 @@ appVersion: "latest"
 flaskEnv: "production"
 
 # Number of replicas to deploy
-replicaCount: 3
+replicaCount: 2
 
 # The name displayed in the application response
-agentName: "Charizard"
+agentName: "Infernape"
 
 # NodePort for exposing the service externally
 nodePort: 30080

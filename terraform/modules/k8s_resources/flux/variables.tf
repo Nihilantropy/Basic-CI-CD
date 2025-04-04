@@ -37,13 +37,20 @@ variable "gitops_repo_url" {
 variable "gitops_repo_branch" {
   description = "Branch of the GitOps repository to use"
   type        = string
-  default     = "main"
+  default     = "helm-charts"
 }
 
 variable "gitops_repo_name" {
   description = "Name for the Flux GitRepository resource"
   type        = string
   default     = "pipeline-project"
+}
+
+variable "gitops_repo_tag" {
+  description = "Tag to track in the GitOps repository (e.g., latest, TIMESTAMP)"
+  type        = string
+  default     = "latest"
+  
 }
 
 variable "sync_interval" {
@@ -63,6 +70,13 @@ variable "helm_release_name" {
 variable "helm_chart_path" {
   description = "Path in the repository where the Helm chart is located"
   type        = string
+  default     = "./helm/appflask"
+}
+
+variable "app_namespace" {
+  description = "Namespace where the application should be deployed"
+  type        = string
+  default     = "appflask"
 }
 
 variable "app_replica_count" {
@@ -75,6 +89,18 @@ variable "app_agent_name" {
   description = "Agent name to display in the application"
   type        = string
   default     = "TerraformFlux"
+}
+
+variable "app_env" {
+  description = "Environment for the application (e.g., production, development)"
+  type        = string
+  default     = "production"
+}
+
+variable "service_port" {
+  description = "NodePort for the application service"
+  type        = number
+  default     = 30080
 }
 
 # GitLab access

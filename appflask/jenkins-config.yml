@@ -14,9 +14,9 @@
 # createMergeRequest: false
 
 # # Integration controls
-# enableGitlabStatus: true
-# enableTelegram: true
-# enableMetrics: true
+enableGitlabStatus: true
+enableTelegram: true
+enableMetrics: false
 
 # You can add branch-specific configurations in the future
 # branches:

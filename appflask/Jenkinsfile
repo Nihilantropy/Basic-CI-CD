@@ -13,25 +13,31 @@ pipeline {
         timeout(time: 90, unit: 'SECONDS')
     }
 
-    // parameters {
-    //     // Core execution controls - these will only be used for manual builds
-    //     booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
-    //     booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
-    //     booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
-    //     booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
-    //     booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
-    //     booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
-    //     booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
-    //     booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
-    //     booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
+    parameters {
+        // Core execution controls - these will only be used for manual builds
+        // booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
+        // booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
+        // booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
+        // booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
+        // booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
+        // booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
+        // booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
+        // booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
+        // booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
         
-    //     // Integration controls
-    //     booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
-    //     booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
+        // Integration controls
+        booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
+        booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
 
-    //     // metrics
-    //     booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
-    // }
+        // metrics
+        booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
+
+        booleanParam(
+            name: 'AUTO_MERGE_TO_MAIN',
+            defaultValue: true,
+            description: 'Automatically merge changes to main branch if all checks pass'
+        )
+    }
 
     environment {
         // Nexus configuration
@@ -77,57 +83,57 @@ pipeline {
         }
         
 
-        // stage('Load Configuration') {
-        //     steps {
-        //         script {
-        //             echo "Loading configuration from jenkins-config.yml if available..."
+        stage('Load Configuration') {
+            steps {
+                script {
+                    echo "Loading configuration from jenkins-config.yml if available..."
                     
-        //             // Initialize global variables for stage control
-        //             env.DO_RUN_TESTS = params.RUN_TESTS.toString()
-        //             env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
-        //             env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
-        //             env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
-        //             env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
-        //             env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
-        //             env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
-        //             env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
-        //             env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
-        //             env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
-        //             env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
-        //             env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
+                    // Initialize global variables for stage control
+                    // env.DO_RUN_TESTS = params.RUN_TESTS.toString()
+                    // env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
+                    // env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
+                    // env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
+                    // env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
+                    // env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
+                    // env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
+                    // env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
+                    // env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
+                    env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
+                    env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
+                    env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
                     
-        //             // Try to load the configuration file
-        //             try {
-        //                 if (fileExists('jenkins-config.yml')) {
-        //                     echo "Found jenkins-config.yml file, loading configuration..."
-        //                     def config = readYaml(file: 'jenkins-config.yml')
-        //                     echo "Config loaded: ${config}"
+                    // Try to load the configuration file
+                    try {
+                        if (fileExists('jenkins-config.yml')) {
+                            echo "Found jenkins-config.yml file, loading configuration..."
+                            def config = readYaml(file: 'jenkins-config.yml')
+                            echo "Config loaded: ${config}"
                             
-        //                     // Override global variables with values from config file
-        //                     if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
-        //                     if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
-        //                     if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
-        //                     if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
-        //                     if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
-        //                     if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
-        //                     if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
-        //                     if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
-        //                     if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
-        //                     if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
-        //                     if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
-        //                     if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
+                            // Override global variables with values from config file
+                            if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
+                            if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
+                            if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
+                            if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
+                            if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
+                            if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
+                            if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
+                            if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
+                            if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
+                            if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
+                            if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
+                            if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
                             
-        //                     echo "Configuration values set from config file"
-        //                 } else {
-        //                     echo "No jenkins-config.yml file found, using parameter values"
-        //                 }
-        //             } catch (Exception e) {
-        //                 echo "Error loading config file: ${e.getMessage()}"
-        //                 echo "Using parameter values instead"
-        //             }
-        //         }
-        //     }
-        // }
+                            echo "Configuration values set from config file"
+                        } else {
+                            echo "No jenkins-config.yml file found, using parameter values"
+                        }
+                    } catch (Exception e) {
+                        echo "Error loading config file: ${e.getMessage()}"
+                        echo "Using parameter values instead"
+                    }
+                }
+            }
+        }
         
         stage('Pipeline Start') {
             steps {
@@ -149,9 +155,9 @@ pipeline {
                     // echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
                     // echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
                     // echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
-                    // echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
-                    // echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
-                    // echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
+                    echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
+                    echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
+                    echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
 
                     // initialize Prometheus metrics if enabled
                     utils.initMetrics()
@@ -360,42 +366,31 @@ pipeline {
                 }
             }
         }
+
+        stage('Update Helm Branch') {
+            // when {
+            //     expression { return params.UPDATE_HELM_BRANCH }
+            // }
+            steps {
+                script {
+                    utils.runStage('helm-branch', 'Updating Helm charts branch for Flux... 🚢') {
+                        try {
+                            // Call the function with required parameters
+                            def result = utils.updateHelmBranch(
+                                "helm-charts",                             // helmBranch
+                                env.TIMESTAMP,                             // version
+                            )
+                            
+                            utils.notify("Jenkins: Updated Helm charts branch with version ${env.TIMESTAMP} 🚢")
+                        } catch (Exception e) {
+                            utils.notify("Jenkins: Failed to update Helm charts branch: ${e.message} ⚠️")
+                            throw e
+                        }
+                    }
+                }
+            }
+        }
     }
-
-    //     stage('Create Merge Request') {
-    //         steps {
-    //             script {
-    //                 utils.runStage('merge-request', 'Creating merge request to main branch... 🔄') {
-
-    //                     def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
-                        
-    //                     // Skip if we're already on main
-    //                     if (currentBranch != 'main') {
-    //                         // Create a descriptive title and message
-    //                         def mrTitle = "Merge ${currentBranch} to main - Version ${env.TIMESTAMP}"
-    //                         def mrDescription = """
-    //                         This merge request was automatically generated by the Jenkins pipeline.
-                            
-    //                         It includes changes for version ${env.TIMESTAMP} that have been tagged and should be merged to the main branch.
-                            
-    //                         Build: ${env.BUILD_URL}
-    //                         """
-                         
-    //                         // Create the merge request
-    //                         def response = utils.createMergeRequest("gitlab", "pipeline-project-group/pipeline-project", 
-    //                                     currentBranch, "main", mrTitle, mrDescription)
-                            
-    //                         sh 'echo ${response}'
-    //                         // Notify about successful MR creation
-    //                         utils.notify("Jenkins: Created merge request from ${currentBranch} to main for version ${env.TIMESTAMP}.")
-    //                     } else {
-    //                         echo "Current branch is main, skipping merge request creation"
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     post {
         success {

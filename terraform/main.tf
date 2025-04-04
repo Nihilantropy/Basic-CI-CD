@@ -63,8 +63,6 @@ module "nexus" {
 module "flux" {
   source                 = "./modules/k8s_resources/flux"
   flux_namespace         = "flux-system"
-  gitops_repo_branch     = "main"
-  helm_chart_path        = "helm/appflask"
   kubeconfig_path        = abspath(module.cluster.kubeconfig_path)
   flux_gitlab_token      = chomp(file("~/.tokens/gitlab/gitlab.local/flux/flux.token"))
   gitops_repo_url        = "http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git"
