@@ -14,7 +14,7 @@ variable "worker_count" {
 variable "kubeconfig_path" {
   description = "Path to save the kubeconfig file"
   type        = string
-  default     = "~/.kube/config"
+  default     = "terra-home/.kube/config"
 }
 
 variable "host_machine_ip" {

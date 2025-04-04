@@ -4,13 +4,13 @@ appVersion: "latest"
 
 # Flask environment setting
 # Options: development, testing, production, default (development)
-flaskEnv: "production"
+flaskEnv: "default"
 
 # Number of replicas to deploy
-replicaCount: 2
+replicaCount: 5
 
 # The name displayed in the application response
-agentName: "Infernape"
+agentName: "Archeus"
 
 # NodePort for exposing the service externally
 nodePort: 30080

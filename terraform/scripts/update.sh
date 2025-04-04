@@ -1,13 +1,13 @@
 #!/bin/bash
-# deploy.sh - One-command deployment of the Terraform infrastructure
+# update.sh - Apply changes to existing Terraform infrastructure
 
 # Define cleanup function to handle removing plan files
 cleanup() {
   local status=$?
-  # Remove the deployment.tfplan file
-  if [ -f deployment.tfplan ]; then
+  # Remove the update.tfplan file
+  if [ -f update.tfplan ]; then
     echo -e "${BLUE}Cleaning up temporary files...${NC}"
-    rm -f deployment.tfplan
+    rm -f update.tfplan
     echo -e "${GREEN}Temporary plan file removed.${NC}"
   fi
   exit $status
@@ -41,40 +41,45 @@ if [ ! -d "$ENVIRONMENT_DIR" ]; then
   exit 1
 fi
 
+# Check if terraform state exists (indicating previous deployment)
+if [ ! -f "${ENVIRONMENT_DIR}/terraform.tfstate" ]; then
+  echo -e "${RED}Error: No existing terraform state found in ${ENVIRONMENT_DIR}${NC}"
+  echo -e "Please run deploy.sh first to create the infrastructure before updating."
+  exit 1
+fi
+
 # Change to the environment directory
 echo -e "${BLUE}Changing to environment directory: ${ENVIRONMENT_DIR}${NC}"
 cd "$ENVIRONMENT_DIR"
 
 echo -e "${BLUE}===============================================${NC}"
-echo -e "${BLUE}Deploying Terraform Infrastructure - ${ENVIRONMENT}${NC}"
+echo -e "${BLUE}Updating Terraform Infrastructure - ${ENVIRONMENT}${NC}"
 echo -e "${BLUE}===============================================${NC}"
 echo
 
-# Step 1: Initialize Terraform (always run this first)
-echo -e "${YELLOW}Step 1: Initializing Terraform${NC}"
-terraform init
-echo -e "${GREEN}Initialization successful!${NC}"
+# Step 1: Plan changes
+echo -e "${YELLOW}Step 1: Planning infrastructure changes${NC}"
+echo -e "${BLUE}Detecting configuration changes...${NC}"
+terraform plan -out=update.tfplan
+
+# Check if there are any changes
+HAS_CHANGES=$(terraform show -no-color update.tfplan | grep -c "Plan: " || true)
+if [ "$HAS_CHANGES" -eq "0" ] || grep -q "Plan: 0 to add, 0 to change, 0 to destroy" <(terraform show -no-color update.tfplan); then
+  echo -e "${GREEN}No changes detected. Infrastructure is up to date!${NC}"
+  # No need to manually remove update.tfplan here, the cleanup function will handle it
+  exit 0
+fi
+
+# Step 2: Apply changes if detected
+echo -e "${YELLOW}Step 2: Applying infrastructure changes${NC}"
+echo -e "${BLUE}Applying changes...${NC}"
+terraform apply update.tfplan
+
+echo -e "${GREEN}Infrastructure successfully updated!${NC}"
 echo
 
-# Step 2: Validate the Terraform configuration
-echo -e "${YELLOW}Step 2: Validating Terraform Configuration${NC}"
-terraform validate
-echo -e "${GREEN}Validation successful!${NC}"
-echo
-
-# Step 3: Plan and apply - all in one step
-echo -e "${YELLOW}Step 3: Planning and applying infrastructure${NC}"
-echo -e "${BLUE}Planning...${NC}"
-terraform plan -out=deployment.tfplan
-
-echo -e "${BLUE}Applying...${NC}"
-terraform apply deployment.tfplan
-
-echo -e "${GREEN}Infrastructure successfully deployed!${NC}"
-echo
-
-# Step 4: Verify resources
-echo -e "${YELLOW}Step 4: Verifying deployed resources${NC}"
+# Step 3: Verify resources
+echo -e "${YELLOW}Step 3: Verifying updated resources${NC}"
 
 # Get kubeconfig from Terraform outputs if possible
 if terraform output -raw kubeconfig_path >/dev/null 2>&1; then
@@ -82,12 +87,12 @@ if terraform output -raw kubeconfig_path >/dev/null 2>&1; then
   echo -e "${BLUE}Using kubeconfig: ${KUBECONFIG}${NC}"
 
   # Verify cluster and resources
-  echo -e "${BLUE}Checking nodes:${NC}"
-  kubectl get nodes
-
-  echo -e "${BLUE}Checking namespaces:${NC}"
-  kubectl get namespaces
-
+  echo -e "${BLUE}Checking Flux system status:${NC}"
+  kubectl get helmreleases -A
+  
+  echo -e "${BLUE}Checking application pods:${NC}"
+  kubectl get pods -n appflask
+  
   # Check Nexus service if relevant output exists
   if terraform output -raw nexus_namespace >/dev/null 2>&1; then
     NEXUS_NS=$(terraform output -raw nexus_namespace)
@@ -98,10 +103,12 @@ else
   echo -e "${YELLOW}No kubeconfig output found. Skipping Kubernetes verification.${NC}"
 fi
 
-echo -e "${GREEN}Deployment complete!${NC}"
+# Note: No need to explicitly remove update.tfplan here since the cleanup function will handle it
+
+echo -e "${GREEN}Update complete!${NC}"
 echo
-echo -e "${BLUE}You can now use your infrastructure.${NC}"
-echo -e "${BLUE}To apply changes, run: terraform apply${NC}"
+echo -e "${BLUE}Your infrastructure has been updated with the latest changes.${NC}"
+echo -e "${BLUE}To make additional changes, modify the Terraform files and run this script again.${NC}"
 echo -e "${BLUE}To destroy everything, run: ../../scripts/cleanup.sh ${ENVIRONMENT}${NC}"
 echo
 

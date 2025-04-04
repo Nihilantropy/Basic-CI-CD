@@ -23,7 +23,7 @@ variable "helm_timeout" {
 variable "kubeconfig_path" {
   description = "Path to the kubeconfig file"
   type        = string
-  default     = "~/.kube/config"
+  default     = "terra-home/.kube/config"
 }
 
 # GitOps repository variables
@@ -64,7 +64,7 @@ variable "sync_interval" {
 variable "helm_release_name" {
   description = "Name of the HelmRelease to create"
   type        = string
-  default     = "appflask"
+  default     = "flux-helm-release"
 }
 
 variable "helm_chart_path" {

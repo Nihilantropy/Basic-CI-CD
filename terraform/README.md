@@ -192,7 +192,7 @@ After deployment, you can check the status of your resources:
 cd environments/local
 
 # use the local kube-config
-export KUBECONFIG=\~/.kube/config-tf-local
+export KUBECONFIG=\terra-home/.kube/config-tf-local
 
 # View the local cluster
 kubectl get nodes

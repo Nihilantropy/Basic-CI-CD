@@ -8,7 +8,7 @@ build/
 dist/
 appflask.egg-info
 *.env
-\~
+terra-home*
 .terraform.lock.hcl
 .terraform*
 terraform.tfstate*
