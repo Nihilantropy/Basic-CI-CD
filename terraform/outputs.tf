@@ -37,3 +37,24 @@ output "gitops_repo_name" {
   description = "Name of the configured GitRepository"
   value       = module.flux.gitops_repo_name
 }
+
+# ArgoCD outputs
+output "argocd_namespace" {
+  description = "Namespace where ArgoCD is installed"
+  value       = module.argocd.argocd_namespace
+}
+
+output "argocd_app_namespace" {
+  description = "Namespace where ArgoCD deploys the application"
+  value       = module.argocd.app_namespace
+}
+
+output "argocd_ui_url" {
+  description = "URL to access the ArgoCD UI"
+  value       = module.argocd.argocd_ui_url
+}
+
+output "argocd_initial_password_command" {
+  description = "Command to get the initial ArgoCD admin password"
+  value       = module.argocd.argocd_initial_password_command
+}

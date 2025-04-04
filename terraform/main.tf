@@ -72,3 +72,21 @@ module "flux" {
     module.nexus
   ]
 }
+
+# Step 7: Install ArgoCD 
+module "argocd" {
+  source                 = "./modules/k8s_resources/argocd"
+  kubeconfig_path        = abspath(module.cluster.kubeconfig_path)
+  argocd_gitlab_token    = chomp(file("~/.tokens/gitlab/gitlab.local/argocd/argocd.token"))
+  gitops_repo_url        = "http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git"
+  
+  # Customize ArgoCD and application settings
+  argocd_ui_nodeport     = 30888  # Choose an available NodePort for ArgoCD UI
+  app_nodeport           = 30180  # As requested, different from Flux (30080)
+  app_agent_name         = "ArgoCD Agent"
+  
+  depends_on = [
+    null_resource.cluster_ready_check,
+    module.nexus
+  ]
+}

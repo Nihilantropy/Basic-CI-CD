@@ -16,7 +16,7 @@
 # # Integration controls
 enableGitlabStatus: true
 enableTelegram: true
-enableMetrics: false
+enableMetrics: true
 
 # You can add branch-specific configurations in the future
 # branches:
