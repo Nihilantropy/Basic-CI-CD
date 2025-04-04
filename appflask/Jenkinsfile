@@ -343,24 +343,31 @@ pipeline {
             steps {
                 script {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤') {
-
-                            withCredentials([
-                                usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
-                            ]) {
+                        withCredentials([
+                            usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
+                        ]) {
                             // Set up Git configuration
                             sh '''
                                 git config user.email "${GITLAB_EMAIL}"
                                 git config user.name "${USERNAME}"
                             '''
                             
-                            // Update version info and commit
-                            utils.updateVersionInfo()
+                            // Prepare all file changes (stage but don't commit)
+                            def versionInfoUpdated = utils.prepareVersionInfo()
+                            def helmChartUpdated = utils.prepareHelmChartVersion()
                             
-                            // Create and push tag (after main branch is updated)
+                            // Single commit and push for all changes
+                            if (versionInfoUpdated || helmChartUpdated) {
+                                def commitMessage = "Update version to ${env.TIMESTAMP} for release"
+                                utils.commitAndPushChanges(commitMessage)
+                                utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}.")
+                            }
+                            
+                            // Create and push tag after main branch is updated
                             utils.createReleaseTag()
                             
                             // Notify about successful operations
-                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}. Tag created successfully.")
+                            utils.notify("Jenkins: Tag ${env.TIMESTAMP} created successfully.")
                         }
                     }
                 }
@@ -368,9 +375,6 @@ pipeline {
         }
 
         stage('Update Helm Branch') {
-            // when {
-            //     expression { return params.UPDATE_HELM_BRANCH }
-            // }
             steps {
                 script {
                     utils.runStage('helm-branch', 'Updating Helm charts branch for Flux... 🚢') {

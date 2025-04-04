@@ -615,26 +615,105 @@ def runStage(String stageName, String notificationMessage, Closure stageBody) {
     }
 }
 
-// Other utility functions from the original file...
-def updateVersionInfo() {
-    echo "Updating version info and committing changes..."
+/**
+ * Prepares version.info file update without committing
+ * @return True if successful, false otherwise
+ */
+def prepareVersionInfo() {
+    echo "Preparing version.info update to ${env.TIMESTAMP}..."
     
-    def timestamp = env.TIMESTAMP
-    def gitBranch = env.GIT_BRANCH
+    try {
+        // Update the version.info file
+        writeFile file: 'version.info', text: env.TIMESTAMP
+        
+        // Stage the file
+        sh "git add version.info"
+        echo "Successfully prepared version.info update"
+        return true
+    } catch (Exception e) {
+        echo "Error preparing version.info: ${e.message}"
+        return false
+    }
+}
 
-    // Add and commit version-related changes
-    sh """
-        git add version.info
-        git commit -m "Update version to ${timestamp} [ci skip]"
-    """
+/**
+ * Prepares Helm Chart.yaml appVersion update without committing
+ * @return True if successful, false otherwise
+ */
+def prepareHelmChartVersion() {
+    echo "Preparing Helm chart appVersion update to ${env.TIMESTAMP}..."
     
-    withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
-        sh """
-            git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git HEAD:refs/heads/${gitBranch}
-        """
+    def chartFile = "helm/appflask/Chart.yaml"
+    
+    // Check if the Chart.yaml file exists
+    if (!fileExists(chartFile)) {
+        echo "Warning: ${chartFile} not found! Skipping helm chart update."
+        return false
     }
     
-    echo "Version info updated on branch ${gitBranch}"
+    try {
+        // Read the current Chart.yaml content
+        def chartYaml = readFile(chartFile)
+        
+        // Update the appVersion field, preserving the format and other content
+        def updatedChartYaml
+        if (chartYaml.contains("appVersion:")) {
+            // Replace existing appVersion line
+            updatedChartYaml = chartYaml.replaceAll(/appVersion:.*/, "appVersion: \"${env.TIMESTAMP}\"")
+        } else {
+            // If appVersion doesn't exist, add it at the end
+            updatedChartYaml = chartYaml.trim() + "\n\n# Updated by Jenkins pipeline\nappVersion: \"${env.TIMESTAMP}\"\n"
+        }
+        
+        // Write the updated content back to the file
+        writeFile file: chartFile, text: updatedChartYaml
+        
+        // Stage the changes
+        sh "git add ${chartFile}"
+        
+        echo "Successfully prepared Helm chart appVersion update"
+        return true
+    } catch (Exception e) {
+        echo "Error preparing Helm chart version: ${e.message}"
+        return false
+    }
+}
+
+/**
+ * Commits all staged changes and pushes to the repository
+ * @param commitMessage The commit message
+ * @return True if successful, false otherwise
+ */
+def commitAndPushChanges(String commitMessage) {
+    echo "Committing and pushing changes: ${commitMessage}"
+    
+    try {
+        // Check if there are any staged changes
+        def hasChanges = sh(script: "git diff --staged --quiet || echo 'changes'", returnStdout: true).trim()
+        
+        if (hasChanges == 'changes') {
+            // Commit the changes with the provided message
+            sh """
+                git commit -m "${commitMessage} [ci skip]"
+            """
+            
+            // Push the changes
+            withCredentials([string(credentialsId: 'gitlab-personal-access-token', variable: 'GITLAB_TOKEN')]) {
+                sh """
+                    git push http://oauth2:\${GITLAB_TOKEN}@gitlab/pipeline-project-group/pipeline-project.git HEAD:${env.GIT_BRANCH.replaceAll('^origin/', '')}
+                """
+            }
+            
+            echo "Successfully committed and pushed changes"
+            return true
+        } else {
+            echo "No changes to commit"
+            return false
+        }
+    } catch (Exception e) {
+        echo "Error committing and pushing changes: ${e.message}"
+        return false
+    }
 }
 
 def createReleaseTag() {
