@@ -56,7 +56,7 @@ variable "gitops_repo_tag" {
 variable "sync_interval" {
   description = "Interval at which to sync the repo"
   type        = string
-  default     = "1m"
+  default     = "30s"
 }
 
 # Helm release variables
