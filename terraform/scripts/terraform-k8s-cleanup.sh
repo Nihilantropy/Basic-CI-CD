@@ -17,7 +17,7 @@ if kubectl get namespace flux-system &>/dev/null; then
   kubectl delete helmreleases --all -n flux-system --force --grace-period=0
 fi
 
-# Remove finalizers from ArgoCD resources
+Remove finalizers from ArgoCD resources
 if kubectl get namespace argocd &>/dev/null; then
   echo "Cleaning up ArgoCD resources..."
   # Remove finalizers from Applications

@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: appflask-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git
+    targetRevision: argocd
+    path: argocd-apps/helm/appflask
+    helm:
+      valueFiles:
+        - values-prod.yaml
+      # You can still override specific values if needed
+      # parameters:
+      #   - name: agentName
+      #     value: "ArgoCD Prod"
+      #   - name: nodePort
+      #     value: "30180"  # Production port
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: appflask-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

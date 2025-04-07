@@ -82,96 +82,96 @@ services:
       - shared_network
 
   ### PROMETHEUS ###
-  prometheus:
-    container_name: prometheus
-    build:
-      context: ./requirements/Prometheus
-      dockerfile: Dockerfile
-    image: my_prometheus:0.1.0
-    restart: always
-    ports:
-      - "9090:9090"
-    volumes:
-      - prometheus_data:/prometheus
-    env_file:
-      - ./requirements/Prometheus/.env
-    networks:
-      - shared_network
+  # prometheus:
+  #   container_name: prometheus
+  #   build:
+  #     context: ./requirements/Prometheus
+  #     dockerfile: Dockerfile
+  #   image: my_prometheus:0.1.0
+  #   restart: always
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - prometheus_data:/prometheus
+  #   env_file:
+  #     - ./requirements/Prometheus/.env
+  #   networks:
+  #     - shared_network
 
-  ### PROMETHEUS PUSHGATEWAY ###
-  pushgateway:
-    container_name: pushgateway
-    image: prom/pushgateway:v1.4.3
-    restart: always
-    ports:
-      - "9091:9091"
-    networks:
-      - shared_network
+  # ### PROMETHEUS PUSHGATEWAY ###
+  # pushgateway:
+  #   container_name: pushgateway
+  #   image: prom/pushgateway:v1.4.3
+  #   restart: always
+  #   ports:
+  #     - "9091:9091"
+  #   networks:
+  #     - shared_network
 
-  ### ALERTMANAGER ###
-  alertmanager:
-    container_name: alertmanager
-    image: prom/alertmanager:v0.23.0
-    restart: always
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./requirements/Alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - alertmanager_data:/alertmanager
-    networks:
-      - shared_network
+  # ### ALERTMANAGER ###
+  # alertmanager:
+  #   container_name: alertmanager
+  #   image: prom/alertmanager:v0.23.0
+  #   restart: always
+  #   ports:
+  #     - "9093:9093"
+  #   volumes:
+  #     - ./requirements/Alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+  #     - alertmanager_data:/alertmanager
+  #   networks:
+  #     - shared_network
 
-  ### GRAFANA ###
-  grafana:
-    container_name: grafana
-    build:
-      context: ./requirements/Grafana
-      dockerfile: Dockerfile
-    image: my_grafana:0.1.0
-    restart: always
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./requirements/Grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-      - ./requirements/Grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./requirements/Grafana/provisioning/dashboards/json:/etc/grafana/provisioning/dashboards/json
-    env_file:
-      - ./requirements/Grafana/.env
-    networks:
-      - shared_network
+  # ### GRAFANA ###
+  # grafana:
+  #   container_name: grafana
+  #   build:
+  #     context: ./requirements/Grafana
+  #     dockerfile: Dockerfile
+  #   image: my_grafana:0.1.0
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./requirements/Grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+  #     - ./requirements/Grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+  #     - ./requirements/Grafana/provisioning/dashboards/json:/etc/grafana/provisioning/dashboards/json
+  #   env_file:
+  #     - ./requirements/Grafana/.env
+  #   networks:
+  #     - shared_network
 
-  ### CADVISOR ###
-  cadvisor:
-    container_name: cadvisor
-    image: cadvisor:inception
-    build:
-      context: ./requirements/Cadvisor
-      dockerfile: Dockerfile
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-      - /etc/machine-id:/etc/machine-id:ro
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-    networks:
-      - shared_network
-    restart: on-failure
-    privileged: true
-    devices: 
-      - "/dev/kmsg:/dev/kmsg:rw"
-    group_add:
-      - docker
-    security_opt:
-      - apparmor:unconfined
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/cadvisor/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+  # ### CADVISOR ###
+  # cadvisor:
+  #   container_name: cadvisor
+  #   image: cadvisor:inception
+  #   build:
+  #     context: ./requirements/Cadvisor
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /dev/disk/:/dev/disk:ro
+  #     - /etc/machine-id:/etc/machine-id:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:rw
+  #   networks:
+  #     - shared_network
+  #   restart: on-failure
+  #   privileged: true
+  #   devices: 
+  #     - "/dev/kmsg:/dev/kmsg:rw"
+  #   group_add:
+  #     - docker
+  #   security_opt:
+  #     - apparmor:unconfined
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/cadvisor/healthz"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
 
   ### SONARQUBE ###
   sonarqube:

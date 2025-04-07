@@ -1,0 +1,26 @@
+# argocd-apps/apps/appflask.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: appflask-argo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: http://192.168.1.27:8080/pipeline-project-group/pipeline-project.git
+    targetRevision: argocd
+    path: argocd-apps/helm/appflask
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: appflask-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

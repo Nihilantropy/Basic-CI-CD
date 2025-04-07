@@ -460,8 +460,8 @@ The typical workflow in this environment:
 4. If checks pass, Jenkins builds the application
 5. Binary is uploaded to Nexus with version information
 6. Version information and Helm chart version are updated in Git repo and tagged
-7. Helm chart folder is pushed to anewly created helm-charts branch
-8. Flux detects the changes in the Git repository, on the helm-charts branch
+7. Helm chart folder is pushed to anewly created **argocd** branch
+8. Flux detects the changes in the Git repository, on the **argocd** branch
 9. Flux automatically deploys the updated Helm chart to Kubernetes (if the *version* field in the *Chart.yaml* file was updated)
 10. Helm chart downloads appropriate binary version from Nexus
 11. Application runs in Kubernetes with specified configuration

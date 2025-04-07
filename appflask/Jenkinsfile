@@ -13,18 +13,7 @@ pipeline {
         timeout(time: 90, unit: 'SECONDS')
     }
 
-    parameters {
-        // Core execution controls - these will only be used for manual builds
-        // booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run the test stage')
-        // booleanParam(name: 'RUN_RUFF_CHECK', defaultValue: false, description: 'Run the Ruff code quality check')
-        // booleanParam(name: 'RUN_BANDIT_CHECK', defaultValue: false, description: 'Run the Bandit security check')
-        // booleanParam(name: 'UPDATE_VERSION', defaultValue: false, description: 'Update version information')
-        // booleanParam(name: 'BUILD_EXECUTABLE', defaultValue: false, description: 'Build the executable')
-        // booleanParam(name: 'ARCHIVE_EXECUTABLE', defaultValue: false, description: 'Archive the executable')
-        // booleanParam(name: 'UPLOAD_TO_NEXUS', defaultValue: false, description: 'Upload artifacts to Nexus')
-        // booleanParam(name: 'PUSH_GIT_CHANGES', defaultValue: false, description: 'Push changes and create tag')
-        // booleanParam(name: 'CREATE_MERGE_REQUEST', defaultValue: false, description: 'Create a merge request to main branch')
-        
+    parameters {      
         // Integration controls
         booleanParam(name: 'ENABLE_GITLAB_STATUS', defaultValue: false, description: 'Update GitLab commit status')
         booleanParam(name: 'ENABLE_TELEGRAM', defaultValue: false, description: 'Send Telegram notifications')
@@ -88,16 +77,6 @@ pipeline {
                 script {
                     echo "Loading configuration from jenkins-config.yml if available..."
                     
-                    // Initialize global variables for stage control
-                    // env.DO_RUN_TESTS = params.RUN_TESTS.toString()
-                    // env.DO_RUN_RUFF_CHECK = params.RUN_RUFF_CHECK.toString()
-                    // env.DO_RUN_BANDIT_CHECK = params.RUN_BANDIT_CHECK.toString()
-                    // env.DO_UPDATE_VERSION = params.UPDATE_VERSION.toString()
-                    // env.DO_BUILD_EXECUTABLE = params.BUILD_EXECUTABLE.toString()
-                    // env.DO_ARCHIVE_EXECUTABLE = params.ARCHIVE_EXECUTABLE.toString()
-                    // env.DO_UPLOAD_TO_NEXUS = params.UPLOAD_TO_NEXUS.toString()
-                    // env.DO_PUSH_GIT_CHANGES = params.PUSH_GIT_CHANGES.toString()
-                    // env.DO_CREATE_MERGE_REQUEST = params.CREATE_MERGE_REQUEST.toString()
                     env.DO_ENABLE_GITLAB_STATUS = params.ENABLE_GITLAB_STATUS.toString()
                     env.DO_ENABLE_TELEGRAM = params.ENABLE_TELEGRAM.toString()
                     env.DO_ENABLE_METRICS = params.ENABLE_METRICS.toString()
@@ -109,16 +88,6 @@ pipeline {
                             def config = readYaml(file: 'jenkins-config.yml')
                             echo "Config loaded: ${config}"
                             
-                            // Override global variables with values from config file
-                            if (config.runTests != null) env.DO_RUN_TESTS = config.runTests.toString()
-                            if (config.runRuffCheck != null) env.DO_RUN_RUFF_CHECK = config.runRuffCheck.toString()
-                            if (config.runBanditCheck != null) env.DO_RUN_BANDIT_CHECK = config.runBanditCheck.toString()
-                            if (config.updateVersion != null) env.DO_UPDATE_VERSION = config.updateVersion.toString()
-                            if (config.buildExecutable != null) env.DO_BUILD_EXECUTABLE = config.buildExecutable.toString()
-                            if (config.archiveExecutable != null) env.DO_ARCHIVE_EXECUTABLE = config.archiveExecutable.toString()
-                            if (config.uploadToNexus != null) env.DO_UPLOAD_TO_NEXUS = config.uploadToNexus.toString()
-                            if (config.pushGitChanges != null) env.DO_PUSH_GIT_CHANGES = config.pushGitChanges.toString()
-                            if (config.createMergeRequest != null) env.DO_CREATE_MERGE_REQUEST = config.createMergeRequest.toString()
                             if (config.enableGitlabStatus != null) env.DO_ENABLE_GITLAB_STATUS = config.enableGitlabStatus.toString()
                             if (config.enableTelegram != null) env.DO_ENABLE_TELEGRAM = config.enableTelegram.toString()
                             if (config.enableMetrics != null) env.DO_ENABLE_METRICS = config.enableMetrics.toString()
@@ -144,17 +113,6 @@ pipeline {
                     // Send notification
                     utils.notify("🚀 Pipeline started for ${env.JOB_NAME} #${env.BUILD_NUMBER} at ${TIMESTAMP}")
                     
-                    // Print selected stages for clarity
-                    // echo "Running with the following configuration:"
-                    // echo "Tests: ${DO_RUN_TESTS}"
-                    // echo "Ruff Check: ${DO_RUN_RUFF_CHECK}"
-                    // echo "Bandit Check: ${DO_RUN_BANDIT_CHECK}"
-                    // echo "Update Version: ${DO_UPDATE_VERSION}"
-                    // echo "Build Executable: ${DO_BUILD_EXECUTABLE}"
-                    // echo "Archive Executable: ${DO_ARCHIVE_EXECUTABLE}"
-                    // echo "Upload to Nexus: ${DO_UPLOAD_TO_NEXUS}"
-                    // echo "Push Git Changes: ${DO_PUSH_GIT_CHANGES}"
-                    // echo "Create Merge Request: ${DO_CREATE_MERGE_REQUEST}"
                     echo "GitLab Status Updates: ${DO_ENABLE_GITLAB_STATUS}"
                     echo "Telegram Notifications: ${DO_ENABLE_TELEGRAM}"
                     echo "Prometheus Metrics: ${DO_ENABLE_METRICS}"
@@ -374,20 +332,20 @@ pipeline {
             }
         }
 
-        stage('Update Helm Branch') {
+        stage('Update ArgoCD Branch') {
             steps {
                 script {
-                    utils.runStage('helm-branch', 'Updating Helm charts branch for Flux... 🚢') {
+                    utils.runStage('argocd-branch', 'Updating ArgoCD application definitions branch... 🚢') {
                         try {
                             // Call the function with required parameters
-                            def result = utils.updateHelmBranch(
-                                "helm-charts",                             // helmBranch
-                                env.TIMESTAMP,                             // version
+                            def result = utils.updateArgoCDBranch(
+                                "argocd",       // argoCDBranch - new branch name for ArgoCD
+                                env.TIMESTAMP,  // version
                             )
                             
-                            utils.notify("Jenkins: Updated Helm charts branch with version ${env.TIMESTAMP} 🚢")
+                            utils.notify("Jenkins: Updated ArgoCD application branch with version ${env.TIMESTAMP} 🚢")
                         } catch (Exception e) {
-                            utils.notify("Jenkins: Failed to update Helm charts branch: ${e.message} ⚠️")
+                            utils.notify("Jenkins: Failed to update ArgoCD branch: ${e.message} ⚠️")
                             throw e
                         }
                     }

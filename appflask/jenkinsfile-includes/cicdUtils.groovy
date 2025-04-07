@@ -741,16 +741,16 @@ def createReleaseTag() {
     echo "Release tags ${timestamp} and 'latest' created and pushed"
 }
 
-def updateHelmBranch(String helmBranch, String version) {
+def updateArgoCDBranch(String argoCDBranch, String version) {
     // Store current state to return to later
     def currentBranch = env.GIT_BRANCH.replaceAll('^origin/', '')
     def originalCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
     
-    echo "Updating Helm branch '${helmBranch}' with version ${version} from ${currentBranch}..."
+    echo "Updating ArgoCD branch '${argoCDBranch}' with version ${version} from ${currentBranch}..."
     
-    // Verify helm directory exists
-    if (!fileExists('helm/')) {
-        error "Helm directory not found in the current branch"
+    // Verify argocd-apps directory exists
+    if (!fileExists('argocd-apps/')) {
+        error "argocd-apps directory not found in the current branch"
     }
     
     // Set up Git identity
@@ -762,47 +762,52 @@ def updateHelmBranch(String helmBranch, String version) {
         
         try {
             // Step 1: Delete remote branch if it exists
-            echo "Deleting remote branch ${helmBranch} if it exists..."
+            echo "Deleting remote branch ${argoCDBranch} if it exists..."
             sh """
-                git push ${gitlabUrl} --delete ${helmBranch} || true
+                git push ${gitlabUrl} --delete ${argoCDBranch} || true
             """
             
             // Step 2: Create a new branch
-            echo "Creating new branch ${helmBranch}..."
-            sh "git checkout -b ${helmBranch}"
+            echo "Creating new branch ${argoCDBranch}..."
+            sh "git checkout -b ${argoCDBranch}"
             
-            // Step 3: Remove everything except helm directory and .git
-            echo "Isolating Helm directory..."
+            // Step 3: Remove everything except argocd-apps directory and .git
+            echo "Isolating argocd-apps directory..."
             sh """
-                # Find and remove all files/dirs except helm/ and .git/
-                find . -mindepth 1 -maxdepth 1 -not -name '.git' -not -name 'helm' -exec rm -rf {} \\;
+                # Find and remove all files/dirs except argocd-apps/ and .git/
+                find . -mindepth 1 -maxdepth 1 -not -name '.git' -not -name 'argocd-apps' -exec rm -rf {} \\;
                 
-                # Update version info in the Helm directory
-                mkdir -p helm/appflask/
-                echo "${version}" > helm/appflask/version.info
+                # Update version in Helm charts
+                if [ -f argocd-apps/helm/appflask/Chart.yaml ]; then
+                    # Update appVersion in Chart.yaml
+                    sed -i 's/appVersion: .*/appVersion: "${version}"/g' argocd-apps/helm/appflask/Chart.yaml
+                    
+                    # Create or update version.info file
+                    echo "${version}" > argocd-apps/helm/appflask/version.info
+                fi
                 
                 # Add a simple README
-                echo "# Helm Charts for Flux CD\\n\\nThis branch contains only Helm charts for deployment via Flux CD.\\n\\nLast updated: \$(date)\\nVersion: ${version}\\nSource: ${currentBranch}" > README.md
+                echo "# ArgoCD Application Definitions\\n\\nThis branch contains the ArgoCD App of Apps structure for deployment via ArgoCD.\\n\\nLast updated: \$(date)\\nVersion: ${version}\\nSource: ${currentBranch}" > README.md
             """
             
             // Stage and commit the changes
             echo "Committing changes..."
             sh """
                 git add -A
-                git commit -m "Update Helm charts to version ${version} from ${currentBranch}"
+                git commit -m "Update ArgoCD application definitions to version ${version} from ${currentBranch}"
             """
             
             // Push the new branch
             echo "Pushing branch to remote repository..."
             sh """
-                git push -f ${gitlabUrl} ${helmBranch}
+                git push -f ${gitlabUrl} ${argoCDBranch}
             """
             
-            echo "Successfully created fresh ${helmBranch} branch with latest Helm charts"
+            echo "Successfully created fresh ${argoCDBranch} branch with latest ArgoCD application definitions"
             return true
             
         } catch (Exception e) {
-            echo "Failed to update Helm branch: ${e.message}"
+            echo "Failed to update ArgoCD branch: ${e.message}"
             throw e
         } finally {
             // Return to original state

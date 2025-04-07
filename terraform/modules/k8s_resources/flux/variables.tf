@@ -37,7 +37,7 @@ variable "gitops_repo_url" {
 variable "gitops_repo_branch" {
   description = "Branch of the GitOps repository to use"
   type        = string
-  default     = "helm-charts"
+  default     = "argocd"
 }
 
 variable "gitops_repo_name" {

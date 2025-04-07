@@ -1,65 +1,44 @@
 # modules/k8s_resources/argocd/argocd_app.tf
 
-# Define an ArgoCD Application CR 
-# This will be managed by the kubectl provider since the Application CRD is installed by ArgoCD
-
-resource "kubectl_manifest" "argocd_application" {
+# Root Application for App of Apps pattern
+resource "kubectl_manifest" "argocd_root_application" {
   yaml_body = yamlencode({
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
     metadata = {
-      name       = var.app_name
+      name       = "app-of-apps"
       namespace  = var.argocd_namespace
-      finalizers = ["resources-finalizer.argocd.argoproj.io"]  # Enable cascade deletion
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {
-      project = "default"  # Use the default project for simplicity
+      project = "default"
       
-      # Source defines where to get the application manifests from
+      # Source configuration points to the directory containing app definitions
       source = {
         repoURL        = var.gitops_repo_url
         targetRevision = var.gitops_repo_target_revision
-        path           = var.gitops_repo_path
-        helm = {
-          # Override values.yaml from the Helm chart
-          parameters = [
-            {
-              name  = "replicaCount"
-              value = tostring(var.app_replica_count)
-            },
-            {
-              name  = "agentName"
-              value = var.app_agent_name
-            },
-            {
-              name  = "flaskEnv"
-              value = var.app_env
-            },
-            {
-              name  = "nodePort"
-              value = tostring(var.app_nodeport)
-            }
-          ]
-        }
+        path           = var.apps_of_apps_path # Directory containing child app definitions
       }
       
-      # Destination defines where the application will be deployed
+      # Destination defines where the APPLICATION RESOURCES will be synchronized to
+      # (This is where the child Application CRs will be created)
       destination = {
-        server    = "https://kubernetes.default.svc"  # In-cluster deployment
-        namespace = var.app_namespace
+        server    = "https://kubernetes.default.svc"
+        namespace = var.argocd_namespace # Child Application CRs will be created in ArgoCD namespace
       }
       
-      # Sync policy defines how ArgoCD should sync the application
+      # Sync policy for root application
       syncPolicy = {
-        automated = var.sync_policy_automated ? {
-          prune    = var.sync_policy_prune
-          selfHeal = var.sync_policy_self_heal
-        } : null
+        automated = {
+          prune     = true
+          selfHeal  = true
+          allowEmpty = true # Important for app of apps - allows deletion of all child apps if needed
+        }
         
         syncOptions = [
           "CreateNamespace=true",
           "PrunePropagationPolicy=foreground",
-          "PruneLast=true"
+          "RespectIgnoreDifferences=true"
         ]
         
         retry = {

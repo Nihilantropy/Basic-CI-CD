@@ -10,7 +10,7 @@ variable "argocd_namespace" {
 variable "argocd_version" {
   description = "Version of ArgoCD Helm chart to install"
   type        = string
-  default     = "5.46.7"  # Use a specific version for consistency
+  default     = "7.8.23"  # Use a specific version for consistency
 }
 
 variable "helm_timeout" {
@@ -49,16 +49,11 @@ variable "gitops_repo_url" {
   type        = string
 }
 
-variable "gitops_repo_path" {
-  description = "Path in the repository where the Helm chart is located"
-  type        = string
-  default     = "./helm/appflask"
-}
 
 variable "gitops_repo_target_revision" {
   description = "Branch, tag, or commit to use from the repository"
   type        = string
-  default     = "helm-charts"  # Match your Flux configuration
+  default     = "argocd"  # Match your Flux configuration
 }
 
 # Application configuration
@@ -99,21 +94,9 @@ variable "argocd_gitlab_token" {
   sensitive   = true
 }
 
-# Application-specific configuration
-variable "app_replica_count" {
-  description = "Number of application replicas to deploy"
-  type        = number
-  default     = 2
-}
-
-variable "app_agent_name" {
-  description = "Agent name to display in the application"
+# App of Apps configuration
+variable "apps_of_apps_path" {
+  description = "Path in the repository to the App of Apps directory"
   type        = string
-  default     = "ArgoCD"
-}
-
-variable "app_env" {
-  description = "Environment for the application (e.g., production, development)"
-  type        = string
-  default     = "production"
+  default     = "argocd-apps/apps"
 }
