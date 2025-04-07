@@ -6,7 +6,7 @@
 ![Nexus](https://img.shields.io/badge/Nexus-3-green)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-Kind-blueviolet)
 ![Terraform](https://img.shields.io/badge/Terraform-1.7.0-purple)
-![Flux](https://img.shields.io/badge/Flux-2.12.2-lightblue)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-v2.8.0-lightblue)
 ![Sonarqube](https://img.shields.io/badge/Sonarqube-9.9-blue)
 ![Prometheus](https://img.shields.io/badge/Prometheus-v3.2.1-red)
 ![Grafana](https://img.shields.io/badge/Grafana-11.5.2-orange)
@@ -25,7 +25,7 @@ A robust end-to-end CI/CD (Continuous Integration/Continuous Delivery) pipeline 
   - [Jenkins Pipeline](#jenkins-pipeline)
   - [Helm Chart](#helm-chart)
   - [Kubernetes Setup](#kubernetes-setup)
-  - [GitOps with Flux](#gitops-with-flux)
+  - [GitOps with ArgoCD](#gitops-with-argocd)
   - [Monitoring Stack](#monitoring-stack)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -45,7 +45,7 @@ A robust end-to-end CI/CD (Continuous Integration/Continuous Delivery) pipeline 
 
 ## Overview
 
-This project showcases a complete CI/CD pipeline with integrated monitoring that automates the software development lifecycle from code commit to production deployment and observability. By leveraging Docker Compose, Jenkins, GitLab, Nexus, Terraform, Flux, Kubernetes, Prometheus, and Grafana, the project provides a scalable, maintainable, and secure solution for continuous delivery and monitoring of a Python Flask application.
+This project showcases a complete CI/CD pipeline with integrated monitoring that automates the software development lifecycle from code commit to production deployment and observability. By leveraging Docker Compose, Jenkins, GitLab, Nexus, Terraform, ArgoCD, Kubernetes, Prometheus, and Grafana, the project provides a scalable, maintainable, and secure solution for continuous delivery and monitoring of a Python Flask application.
 
 The pipeline handles code quality checks, security scans, code analysis with Sonarqube, artifact management, version control, automated Kubernetes deployment via GitOps, and comprehensive metrics collection, demonstrating best practices in modern DevOps workflows.
 
@@ -58,7 +58,7 @@ The architecture consists of the following main components:
 3. **CI/CD Server**: Jenkins for pipeline automation with Sonarqube integration
 4. **Artifact Repository**: Nexus for storing build artifacts
 5. **Infrastructure as Code**: Terraform for provisioning and managing Kubernetes 
-6. **GitOps Engine**: Flux for automated, Git-based deployments
+6. **GitOps Engine**: ArgoCD for automated, Git-based deployments using the App of Apps pattern
 7. **Deployment Target**: Kind Kubernetes for container orchestration
 8. **Monitoring Stack**: Prometheus and Grafana for metrics collection, visualization, and alerting
 
@@ -69,7 +69,8 @@ The workflow follows a modern CI/CD pattern with GitOps and monitoring integrati
 - Application is built and packaged as a binary
 - Binary is stored in Nexus with version control
 - CI/CD pipeline updates GitLab repository with version changes and tags
-- Flux automatically detects changes in Git and deploys the updated Helm chart to Kubernetes
+- CI/CD pipeline pushes application configurations to dedicated ArgoCD branch
+- ArgoCD detects changes in the Git repository and deploys applications via the App of Apps pattern
 - Prometheus collects metrics from the application, Jenkins, and containers
 - Grafana dashboards visualize performance and health metrics
 - Alertmanager handles alert notifications when thresholds are exceeded
@@ -85,7 +86,8 @@ The workflow follows a modern CI/CD pattern with GitOps and monitoring integrati
 - **Artifact Management**: Versioned storage of binaries in Nexus
 - **Automated Versioning**: Timestamp-based versioning with Git tags
 - **Infrastructure as Code**: Terraform-managed Kubernetes environment
-- **GitOps Deployment**: Flux-based automated deployment triggered by Git changes
+- **GitOps Deployment**: ArgoCD-based automated deployment using App of Apps pattern
+- **Multi-Environment Support**: Separate dev and prod deployment configurations
 - **Kubernetes Deployment**: Helm charts for declarative application deployment
 - **GitLab Integration**: Merge requests, status updates, and integration triggers
 - **Notification System**: Build status notifications via Telegram
@@ -143,8 +145,8 @@ A sophisticated CI/CD pipeline that:
 7. **Archives Executable**: Stores artifacts in Jenkins
 8. **Uploads Artifacts**: Stores binaries in Nexus with both `latest` and timestamped versions
 9. **Creates Git Tags**: Adds timestamp-based version tags to the repository
-10. **Updates Helm Chart**: Updates Chart.yaml version to trigger Flux-based deployment
-11. **Generates Merge Requests**: Creates merge requests to the main branch
+10. **Updates Helm Chart**: Updates Chart.yaml version to trigger ArgoCD-based deployment
+11. **Updates ArgoCD Branch**: Creates/updates a dedicated ArgoCD branch with application definitions
 12. **Updates GitLab Status**: Provides real-time build status in GitLab UI
 13. **Sends Notifications**: Delivers build status via Telegram
 14. **Emits Metrics**: Records pipeline execution metrics for Prometheus monitoring
@@ -159,12 +161,13 @@ A Kubernetes deployment solution that:
 - **Configures Deployments**: Manages replica count and environment variables
 - **Handles Service Exposure**: Exposes the application via NodePort
 - **Supports Version Selection**: Deploys specific application versions
+- **Environment-Specific Configurations**: Separate values files for dev and prod
 - **Implements Health Monitoring**: Configures liveness probes
 - **Manages Environment Variables**: Passes configuration to the application
 - **Downloads from Nexus**: Fetches the appropriate binary version at startup
 - **Exposes Metrics**: Ensures metrics endpoints are accessible for Prometheus scraping
 
-The chart is designed for flexibility, allowing customization through `values.yaml` and is managed in the Git repository to support GitOps workflows.
+The chart is designed for flexibility, allowing customization through environment-specific values files and is managed in the Git repository to support GitOps workflows.
 
 ### Kubernetes Setup
 
@@ -180,17 +183,20 @@ A Terraform-managed Kubernetes environment using:
 
 The Terraform configuration manages the complete lifecycle of the Kubernetes environment, ensuring consistency and reproducibility.
 
-### GitOps with Flux
+### GitOps with ArgoCD
 
-A GitOps implementation that:
+A GitOps implementation that uses the App of Apps pattern:
 
-- **Monitors Git Repository**: Tracks changes to the main repository
-- **Automates Deployments**: Automatically applies changes to the Kubernetes cluster
-- **Manages Helm Releases**: Updates Helm charts when the Chart.yaml version changes
-- **Ensures Consistency**: Keeps the deployed state in sync with the desired state in Git
-- **Provides Visibility**: Shows deployment status and history
+- **Root Application**: Terraform creates a root "App of Apps" Application resource
+- **Application Definitions**: Stored in the `argocd-apps/apps` directory
+- **Automated Synchronization**: ArgoCD automatically syncs Git changes to the cluster
+- **Environment Separation**: Separate application definitions for dev and prod environments
+- **Declarative Configuration**: All application states are defined in Git
+- **Managed Helm Releases**: ArgoCD handles Helm chart deployments
+- **Dedicated Branch**: Uses a separate `argocd` branch for deployment configurations
+- **Self-Healing**: Automatically corrects drift between desired and actual states
 
-Flux continuously monitors the Git repository for changes, ensuring that the Kubernetes cluster always matches the desired state defined in the repository.
+The App of Apps pattern allows for centralized management of multiple applications through a single "root" application that points to other Application resources. This creates a hierarchy that enables easier management of complex deployments across multiple environments.
 
 ### Monitoring Stack
 
@@ -259,7 +265,18 @@ Key monitoring features include:
    ./scripts/deploy.sh local
    ```
 
-8. Verify Prometheus and Grafana:
+8. Access ArgoCD:
+   - Get the ArgoCD UI URL and initial password:
+     ```bash
+     # Use your local IP with the configured nodePort
+     echo "ArgoCD UI: http://<node-ip>:30888"
+     
+     # Get the initial admin password
+     kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+     ```
+   - Log in with username: admin and the password obtained above
+
+9. Verify Prometheus and Grafana:
    - Access Prometheus at http://localhost:9090
    - Access Grafana at http://localhost:3000 (default: admin/admin)
    - Verify data sources are configured
@@ -274,13 +291,21 @@ For detailed, step-by-step setup and configuration instructions, please refer to
    host_machine_ip = "192.168.1.27"  # Update with your actual host IP
    ```
 
-2. Configure environment-specific settings in Helm `values.yaml`:
+2. Configure environment-specific settings in Helm values files:
    ```yaml
+   # Dev environment (values-dev.yaml)
    appVersion: "latest"
-   flaskEnv: "default"
+   flaskEnv: "development"
    replicaCount: 2
-   agentName: "default Agent"
+   agentName: "Charizard"
    nodePort: 30080
+   
+   # Production environment (values-prod.yaml)
+   appVersion: "latest"
+   flaskEnv: "production"
+   replicaCount: 3
+   agentName: "Archeus"
+   nodePort: 30180
    ```
 
 3. Adjust pipeline behavior in `jenkins-config.yml`:
@@ -290,7 +315,10 @@ For detailed, step-by-step setup and configuration instructions, please refer to
    enableMetrics: true
    ```
 
-4. Configure Prometheus alert thresholds in `srcs/requirements/Prometheus/conf/alert_rules/`:
+4. Configure ArgoCD applications in `argocd-apps/apps/`:
+   - Edit `appflask-dev.yaml` and `appflask-prod.yaml` for environment-specific settings
+
+5. Configure Prometheus alert thresholds in `srcs/requirements/Prometheus/conf/alert_rules/`:
    ```yaml
    groups:
      - name: flask-app-alerts
@@ -321,12 +349,18 @@ For detailed, step-by-step setup and configuration instructions, please refer to
      - Jenkins Pipeline Performance Dashboard
      - Container Monitoring Dashboard
 
-3. **Sonarqube**:
+3. **ArgoCD Dashboard**:
+   - Open http://<node-ip>:30888 in your browser
+   - Log in with admin and the retrieved password
+   - View application sync status and health
+   - Explore application deployment configurations
+
+4. **Sonarqube**:
    - Open http://localhost:9000 in your browser
    - View code quality metrics, issues, and test coverage
    - Explore quality profiles and gates
 
-4. **Testing Metrics Collection**:
+5. **Testing Metrics Collection**:
    - Use provided test scripts:
      ```bash
      # Test application rate limiting and metrics recording
@@ -339,7 +373,7 @@ For detailed, step-by-step setup and configuration instructions, please refer to
      bash appflask/test_scripts/alert-testing-script.sh
      ```
 
-5. **Available Metrics**:
+6. **Available Metrics**:
    - **Flask Application**: Request counts, durations, rate limits, version info
    - **Jenkins Pipeline**: Build counts, durations, stage performance, success rates
    - **Container Resources**: CPU, memory, network usage via cAdvisor
@@ -388,30 +422,44 @@ For detailed, step-by-step setup and configuration instructions, please refer to
 
 ### Deploying the Application
 
-Deployment is now fully automated through GitOps with Flux. The process works as follows:
+Deployment is now fully automated through GitOps with ArgoCD using the App of Apps pattern:
 
 1. **CI/CD Pipeline Updates Git Repository**:
    - Jenkins updates the application version
-   - Jenkins also updates the Helm chart version to trigger Flux deployment
-   - Changes are committed and pushed to GitLab repository
+   - Jenkins updates the Helm chart version to trigger ArgoCD deployment
+   - Jenkins updates the dedicated `argocd` branch with application configurations
 
-2. **Flux Detects Changes**:
-   - Flux continuously monitors the Git repository
-   - When chart version changes are detected, Flux triggers a deployment
-   - The application is automatically deployed with the latest changes
+2. **ArgoCD Detects Changes**:
+   - ArgoCD continuously monitors the `argocd` branch in the Git repository
+   - The root "App of Apps" application detects changes to application definitions
+   - Child applications are automatically created or updated based on their definitions
+   - The application is deployed to the appropriate environment (dev or prod)
 
 3. **Verify the deployment**:
    ```bash
-   kubectl get helmreleases -n flux-system
-   kubectl get pods
-   kubectl get svc
+   # Check ArgoCD applications
+   kubectl get applications -n argocd
+   
+   # Check running pods in dev and prod namespaces
+   kubectl get pods -n appflask-dev
+   kubectl get pods -n appflask-prod
+   
+   # Check services
+   kubectl get svc -n appflask-dev
+   kubectl get svc -n appflask-prod
    ```
 
 4. **Test the application endpoints**:
    ```bash
+   # Dev environment
    curl http://<NODE_IP>:30080/              # Main greeting endpoint
    curl http://<NODE_IP>:30080/health        # Health check
    curl http://<NODE_IP>:30080/metrics       # Prometheus metrics endpoint
+   
+   # Prod environment
+   curl http://<NODE_IP>:30180/              # Main greeting endpoint
+   curl http://<NODE_IP>:30180/health        # Health check
+   curl http://<NODE_IP>:30180/metrics       # Prometheus metrics endpoint
    ```
    
 5. **Check metrics in Prometheus**:
@@ -460,15 +508,16 @@ The typical workflow in this environment:
 4. If checks pass, Jenkins builds the application
 5. Binary is uploaded to Nexus with version information
 6. Version information and Helm chart version are updated in Git repo and tagged
-7. Helm chart folder is pushed to anewly created **argocd** branch
-8. Flux detects the changes in the Git repository, on the **argocd** branch
-9. Flux automatically deploys the updated Helm chart to Kubernetes (if the *version* field in the *Chart.yaml* file was updated)
-10. Helm chart downloads appropriate binary version from Nexus
-11. Application runs in Kubernetes with specified configuration
-12. Prometheus scrapes metrics from the deployed application
-13. Monitoring dashboards update with new application and pipeline data
-14. Alerts trigger if any metrics exceed thresholds
-15. Performance is analyzed through Grafana dashboards
+7. Jenkins creates/updates the **argocd** branch with application definitions
+8. ArgoCD detects the changes in the Git repository's **argocd** branch
+9. The root "App of Apps" application syncs changes to child applications
+10. ArgoCD deploys applications to their respective environments (dev, prod)
+11. Helm charts download appropriate binary versions from Nexus
+12. Applications run in Kubernetes with environment-specific configurations
+13. Prometheus scrapes metrics from the deployed applications
+14. Monitoring dashboards update with new application and pipeline data
+15. Alerts trigger if any metrics exceed thresholds
+16. Performance is analyzed through Grafana dashboards
 
 ## Directory Structure
 
@@ -486,6 +535,16 @@ basic-ci-cd/
 │   │   ├── metrics.py            # Prometheus metrics implementation
 │   │   ├── routes.py             # Flask routes/endpoints
 │   │   └── version.py            # Version management
+│   ├── argocd-apps/              # ArgoCD application definitions
+│   │   ├── apps/                 # App of Apps child applications
+│   │   │   ├── appflask-dev.yaml # Dev environment application
+│   │   │   └── appflask-prod.yaml # Prod environment application
+│   │   └── helm/                 # Helm charts for applications
+│   │       ├── appflask/         # AppFlask Helm chart
+│   │       │   ├── templates/    # Kubernetes templates
+│   │       │   ├── Chart.yaml    # Chart metadata
+│   │       │   ├── values-dev.yaml # Dev environment values
+│   │       │   └── values-prod.yaml # Prod environment values
 │   ├── hook-appflask.py          # PyInstaller hook
 │   ├── Jenkinsfile               # CI/CD pipeline definition
 │   ├── jenkinsfile-includes/     # Jenkins pipeline utilities
@@ -505,12 +564,6 @@ basic-ci-cd/
 │   │   ├── test-prometheus-queries.sh  # Tests prometheus queries
 │   │   ├── test_query.sh               # Tests metric queries
 │   │   └── test_rate_limit.sh          # Tests rate limiting
-│   ├── helm/                         # Kubernetes Helm charts
-│   │   ├── appflask/                 # AppFlask chart
-│   │   │   ├── templates/            # Kubernetes resource templates
-│   │   │   ├── Chart.yaml            # Chart metadata
-│   │   │   └── values.yaml           # Configurable values
-│   │   └── README.md                 # Helm documentation
 │   └── version.info              # Application version file
 │
 ├── docs/                         # Documentation files
@@ -527,63 +580,39 @@ basic-ci-cd/
 │   ├── technology & strategy.md  # Monitoring strategy
 │   └── workflows/                # Workflow documentation
 │
-│
 ├── srcs/                         # Docker environment files
 │   ├── docker-compose.yaml       # Service composition
 │   └── requirements/             # Service-specific files
 │       ├── Alertmanager/         # Alert manager configuration
-│       │   └── alertmanager.yml  # Alert configuration
 │       ├── Cadvisor/             # Container monitoring
-│       │   ├── Dockerfile
-│       │   └── tools/
 │       ├── GitLab/               # GitLab configuration
 │       ├── Grafana/              # Grafana configuration
-│       │   ├── Dockerfile
-│       │   └── provisioning/     # Pre-configured dashboards
-│       │       ├── dashboards/
-│       │       │   ├── json/     # Dashboard definitions
-│       │       │   │   ├── appflask-metrics.json
-│       │       │   │   ├── cadvisor.json
-│       │       │   │   └── jenkins-pipeline-performance.json
-│       │       └── datasources/  # Data source configuration
 │       ├── Jenkins/              # Jenkins configuration
-│       │   ├── conf/
-│       │   ├── Dockerfile
-│       │   └── init_scripts/     # Jenkins initialization
 │       ├── Nexus/                # Nexus configuration
 │       ├── Sonarqube/            # Sonarqube configuration
 │       └── Prometheus/           # Prometheus configuration
-│           ├── conf/
-│           │   ├── alert_rules/  # Alert definitions
-│           │   └── prometheus.yml.template
-│           ├── Dockerfile
-│           └── tools/
 │
 ├── terraform/                    # Terraform configurations
 │   ├── cluster_ready.tf          # Cluster readiness check
 │   ├── environments/             # Environment-specific configs
 │   │   └── local/                # Local environment
-│   │       ├── backend.tf        # State storage configuration
-│   │       ├── main.tf           # Environment entry point
-│   │       ├── terraform.tfvars  # Environment variables
-│   │       └── variables.tf      # Variable declarations
 │   ├── locals.tf                 # Local variables
 │   ├── main.tf                   # Main configuration
 │   ├── modules/                  # Reusable modules
 │   │   ├── cluster/              # Kind cluster module
 │   │   └── k8s_resources/        # Kubernetes resources modules
-│   │       ├── flux/             # Flux GitOps module
+│   │       ├── argocd/           # ArgoCD installation and config
+│   │       │   ├── argocd_app.tf # App of Apps definition
+│   │       │   ├── main.tf       # ArgoCD installation
 │   │       └── nexus/            # Nexus integration module
 │   ├── outputs.tf                # Terraform outputs
 │   ├── providers.tf              # Provider configurations
+│   ├── README.md                 # Terraform documentation
 │   ├── RoadMap.md                # Implementation roadmap
 │   └── scripts/                  # Helper scripts
-│       ├── cleanup.sh            # Environment cleanup
-│       └── deploy.sh             # Deployment script
 │
 ├── Makefile                      # Build automation
 ├── README.md                     # This documentation
-├── RoadMap.md                    # Project roadmap and progress
 └── TODO                          # Task list
 ```
 
@@ -603,7 +632,7 @@ Comprehensive documentation is available in the `docs` directory:
 - **Requirements**: Project requirements in `docs/subjects/`
 
 Additional documentation:
-- **[Helm Chart README](helm/README.md)**: Instructions for deploying with Helm
+- **[Helm Chart README](appflask/argocd-apps/helm/README.md)**: Instructions for deploying with Helm
 - **[Terraform README](terraform/README.md)**: Documentation for Terraform infrastructure
 - **Application README**: Documentation for the Flask application in `appflask/README.md`
 - **Test Scripts**: Monitoring validation scripts in `appflask/test_scripts/`

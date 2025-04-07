@@ -1,674 +1,393 @@
-# How to Use: Basic CI/CD Pipeline
+# How to Use: CI/CD Pipeline with ArgoCD
 
-This guide provides step-by-step instructions for setting up and using the Basic CI/CD Pipeline project. By following these instructions, you'll be able to:
-
-1. Set up the required infrastructure
-2. Configure all components
-3. Test the CI/CD pipeline
-4. Deploy applications to Kubernetes
-5. Troubleshoot common issues
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Initial Setup](#initial-setup)
-  - [Environment Setup](#environment-setup)
-  - [Kubernetes Setup](#kubernetes-setup)
-- [Service Configuration](#service-configuration)
-  - [GitLab Configuration](#gitlab-configuration)
-  - [Jenkins Configuration](#jenkins-configuration)
-  - [Nexus Configuration](#nexus-configuration)
-- [Pipeline Usage](#pipeline-usage)
-  - [Creating and Pushing Code](#creating-and-pushing-code)
-  - [Triggering the Pipeline](#triggering-the-pipeline)
-  - [Monitoring the Pipeline](#monitoring-the-pipeline)
-- [Application Deployment](#application-deployment)
-  - [Helm Deployment](#helm-deployment)
-  - [Verifying the Deployment](#verifying-the-deployment)
-  - [Accessing the Application](#accessing-the-application)
-  - [Version Management](#version-management)
-- [Troubleshooting](#troubleshooting)
-  - [Common Issues](#common-issues)
-  - [Logs and Debugging](#logs-and-debugging)
-- [Advanced Usage](#advanced-usage)
-  - [Custom Pipeline Configuration](#custom-pipeline-configuration)
-  - [Rate Limit Testing](#rate-limit-testing)
-  - [Webhook Configuration](#webhook-configuration)
-- [Cleanup](#cleanup)
+This guide provides step-by-step instructions for setting up and using the CI/CD Pipeline with ArgoCD GitOps implementation. This guide focuses on the current project architecture which uses Terraform to provision a Kind Kubernetes cluster and ArgoCD for GitOps deployments.
 
 ## Prerequisites
 
-Before starting, ensure you have the following prerequisites installed on your system:
+- **Docker**: Version 20.10.x or newer
+- **Docker Compose**: Version 2.x or newer
+- **Git**: Version 2.x or newer
+- **Terraform**: Version 1.0.0 or newer
+- **kubectl**: Version 1.24+ or newer
+- **jq**: For JSON processing in scripts (optional but recommended)
+- **DNS entry** for `gitlab.local` pointing to localhost (add to `/etc/hosts`)
 
-### System Requirements
+## 1. Base Environment Setup
 
-- **Operating System**: Linux (Ubuntu/Debian recommended), macOS, or Windows with WSL2
-- **CPU**: 4+ cores recommended
-- **RAM**: 8GB+ recommended (16GB for optimal performance)
-- **Storage**: 20GB+ free space
+### 1.1 Clone the Repository
 
-### Required Software
+```bash
+git clone https://github.com/Nihilantropy/Basic-CI-CD.git
+cd basic-ci-cd
+```
 
-| Software | Minimum Version | Installation Guide |
-|----------|-----------------|-------------------|
-| Git | 2.x | [git-scm.com](https://git-scm.com/downloads) |
-| Docker | 20.10.x | [docs.docker.com](https://docs.docker.com/get-docker/) |
-| Docker Compose | 2.x | [docs.docker.com](https://docs.docker.com/compose/install/) |
-| kubectl | 1.24+ | [kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
-| Helm | 3.x | [helm.sh](https://helm.sh/docs/intro/install/) |
-| K3s, Minikube, or Docker Desktop K8s | Latest | [k3s.io](https://k3s.io/) |
+### 1.2 Configure Host Entry
 
-### Network Requirements
+Add the following to your `/etc/hosts` file:
+```
+127.0.0.1 gitlab.local
+```
 
-- Port `8080` (GitLab)
-- Port `8081` (Jenkins)
-- Port `8082` (Nexus)
-- Port `30080` (Application NodePort)
-- DNS entry for `gitlab.local` pointing to localhost (add to `/etc/hosts`)
+This will resolve gitlab.local to the localhost ip address
 
-## Initial Setup
+### 1.3 Start Docker Compose Environment
 
-### Environment Setup
+Launch all required services using the provided Makefile:
+```bash
+make all
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/basic-ci-cd.git
-   cd basic-ci-cd
-   ```
+This starts:
+- GitLab (http://gitlab.local:8080)
+- Jenkins (http://localhost:8081)
+- Nexus (http://localhost:8082)
+- Sonarqube (http://localhost:9000)
+- Prometheus, Grafana, and other monitoring components
 
-2. **Edit host configuration**:
-   Add the following entry to your `/etc/hosts` file:
-   ```
-   127.0.0.1 gitlab.local
-   ```
+Wait for all services to initialize (can take 3-5 minutes).
 
-3. **Configure environment variables (optional)**:
-   Create a `.env` file in the project root (copy from sample if available):
-   ```bash
-   cp .env.sample .env
-   # Edit .env file with your specific settings
-   ```
+## 2. Service Configuration
 
-4. **Start the environment**:
-   The project includes a Makefile to simplify setup:
-   ```bash
-   # Start all services
-   make all
-   
-   # If you want to build images separately
-   make images
-   
-   # If you want to start containers separately
-   make up
-   ```
-
-5. **Verify services are running**:
-   ```bash
-   make show
-   # or
-   docker ps
-   ```
-   
-   Check that the following containers are running:
-   - gitlab
-   - jenkins
-   - jenkins-docker (Docker-in-Docker service)
-   - nexus
-
-6. **Wait for services to initialize**:
-   - GitLab: ~3-5 minutes
-   - Jenkins: ~1-2 minutes
-   - Nexus: ~2-3 minutes
-   
-   You can check the logs to monitor initialization:
-   ```bash
-   docker logs -f gitlab
-   docker logs -f jenkins
-   docker logs -f nexus
-   ```
-
-### Kubernetes Setup
-
-1. **Start your Kubernetes cluster**:
-   
-   If using K3s:
-   ```bash
-   curl -sfL https://get.k3s.io | sh -
-   # Copy the kubeconfig to the default location
-   mkdir -p ~/.kube
-   sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-   sudo chown $(id -u):$(id -g) ~/.kube/config
-   chmod 600 ~/.kube/config
-   ```
-   
-   If using Minikube:
-   ```bash
-   minikube start --driver=docker
-   ```
-   
-   If using Docker Desktop, enable Kubernetes in the settings.
-
-2. **Verify Kubernetes connection**:
-   ```bash
-   kubectl get nodes
-   ```
-
-3. **Create Nexus namespace and service**:
-   ```bash
-   # Create namespace
-   kubectl create namespace nexus
-   
-   # Find your host machine's IP address (not localhost or 127.0.0.1)
-   # You need your actual network interface IP address
-   ip addr show
-   # Look for inet on your main interface (often eth0, en0, or wlan0)
-   
-   # Edit the Nexus headless endpoint file
-   # Replace 192.168.1.27 with your host's IP address
-   vi k3s/service/nexus-headless-endpoint.yaml
-   
-   # Apply the Kubernetes configurations
-   kubectl apply -f k3s/service/nexus-headless-service.yaml
-   kubectl apply -f k3s/service/nexus-headless-endpoint.yaml
-   ```
-
-4. **Verify the Nexus endpoint is configured correctly**:
-   ```bash
-   kubectl get endpoints -n nexus
-   ```
-
-## Service Configuration
-
-### GitLab Configuration
+### 2.1 GitLab Configuration
 
 1. **Access GitLab**:
-   Open a browser and navigate to http://gitlab.local:8080
+   - Open http://gitlab.local:8080
+   - Login with username: `root` and the password from `make show` output or `docker logs gitlab | grep 'Password:'`
 
-2. **Initial login**:
-   - Username: `root`
-   - Password: Find the initial password in the GitLab logs:
-     ```bash
-     docker logs gitlab | grep 'Password:'
-     ```
-   - Or use the password defined in `srcs/requirements/GitLab/.env` (default: `SuperSecurePassword123`)
+2. **Create Project Group and Repository**:
+   - Create group: `pipeline-project-group`
+   - Create project: `pipeline-project`
 
-3. **Change the root password** when prompted
+3. **Create Personal Access Token**:
+   - Go to User Settings > Access Tokens
+   - Create token with `api`, `read_repository`, `write_repository` scopes
+   - Save the token securely - you'll need it for Jenkins and ArgoCD
 
-4. **Create a group**:
-   - Click on `Groups > Your Groups > New group`
-   - Name: `pipeline-project-group`
-   - Visibility: `Private`
-   - Click `Create group`
+4. **Configure Outbound Requests**:
+   - Go to Admin Area > Settings > Network
+   - Enable "Allow requests to the local network from webhooks and integrations"
+   - Add local networks to the allowlist: `127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, jenkins`
 
-5. **Create a project**:
-   - Navigate to your new group
-   - Click `New project > Create blank project`
-   - Name: `pipeline-project`
-   - Visibility: `Private`
-   - Click `Create project`
-
-6. **Create a personal access token**:
-   - Go to your user avatar > `Preferences`
-   - Select `Access Tokens` in the sidebar
-   - Name: `jenkins-integration`
-   - Scopes: Select `api`, `read_repository`, `write_repository`
-   - Click `Create personal access token`
-   - **Important**: Save the generated token somewhere safe
-
-7. **Configure outbound request settings**:
-   - Go to `Admin Area > Settings > Network`
-   - Expand `Outbound requests`
-   - Check `Allow requests to the local network from webhooks and integrations`
-   - Add the following to the `Local IP addresses and domain names that hooks and services can connect to` section:
-     ```
-     127.0.0.0/8
-     10.0.0.0/8
-     172.16.0.0/12
-     192.168.0.0/16
-     jenkins
-     ```
-   - Save changes
-
-### Jenkins Configuration
+### 2.2 Jenkins Configuration
 
 1. **Access Jenkins**:
-   Open a browser and navigate to http://localhost:8081
+   - Open http://localhost:8081
+   - Get initial password: `docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword`
+   - Complete the setup wizard and create admin user
 
-2. **Initial login**:
-   - Find the initial admin password:
-     ```bash
-     docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-     ```
-   - Enter this password in the Jenkins web interface
-
-3. **Install suggested plugins** when prompted
-
-4. **Create first admin user** when prompted
-   - Fill in username, password, and email details
-   - Click `Save and Continue`
-
-5. **Configure GitLab integration**:
-   - Go to `Manage Jenkins > Configure System`
-   - Scroll down to the `GitLab` section
-   - Click `Add GitLab Server`
+2. **Configure GitLab Integration**:
+   - Go to Manage Jenkins > Configure System
+   - Add GitLab Server:
      - Name: `gitlab-local`
      - URL: `http://gitlab:80/`
-     - Credentials: Click `Add > Jenkins`
-       - Kind: `GitLab API token`
-       - API token: Paste your GitLab personal access token
-       - ID: `gitlab-personal-access-token`
-       - Description: `GitLab API Token`
-       - Click `Add`
-     - Select the credentials you just added
-     - Test the connection by clicking `Test Connection`
-   - Click `Save`
+     - Credentials: Add GitLab API token from previous step
+     - Test connection
 
-6. **Configure Telegram notifications (optional)**:
-   - Create a Telegram bot using BotFather and get the token
-   - Find your chat ID by messaging @userinfobot
-   - Go to `Manage Jenkins > Manage Credentials > Jenkins > Global credentials > Add Credentials`
-     - Kind: `Secret text`
-     - Secret: Your bot token
-     - ID: `telegram-token`
-     - Description: `Telegram Bot Token`
-     - Click `OK`
-   - Add another credential:
-     - Kind: `Secret text`
-     - Secret: Your chat ID
-     - ID: `telegram-chat-id`
-     - Description: `Telegram Chat ID`
-     - Click `OK`
+3. **Configure Nexus Credentials**:
+   - Go to Manage Jenkins > Manage Credentials > Add Credentials
+   - Kind: `Username with password`
+   - ID: `bb41509b-d0cc-4f65-94a4-755c22441930`
+   - Username: `admin`
+   - Password: Nexus admin password (see next section)
 
-7. **Configure Nexus credentials**:
-   - Go to `Manage Jenkins > Manage Credentials > Jenkins > Global credentials > Add Credentials`
-     - Kind: `Username with password`
-     - Username: `admin`
-     - Password: (will be set up in Nexus section)
-     - ID: `bb41509b-d0cc-4f65-94a4-755c22441930` (match the ID in Jenkinsfile)
-     - Description: `Nexus Credentials`
-     - Click `OK`
+4. **Configure Sonarqube Integration**:
+   - Go to Manage Jenkins > Configure System > SonarQube servers
+   - Add SonarQube:
+     - Name: `SonarQube`
+     - Server URL: `http://sonarqube:9000`
+   - Add SonarQube Token credential (after Sonarqube setup)
 
-8. **Create pipeline job**:
-   - Click `New Item`
-   - Enter name: `appflask-pipeline`
-   - Select `Pipeline`
-   - Click `OK`
-   - In the configuration page:
-     - Check `This project is parameterized`
-     - Add Boolean parameters as defined in the Jenkinsfile:
-       - `RUN_TESTS` (default: true)
-       - `RUN_RUFF_CHECK` (default: true)
-       - `RUN_BANDIT_CHECK` (default: true)
-       - `UPDATE_VERSION` (default: true)
-       - `BUILD_EXECUTABLE` (default: true)
-       - `ARCHIVE_EXECUTABLE` (default: true)
-       - `UPLOAD_TO_NEXUS` (default: true)
-       - `PUSH_GIT_CHANGES` (default: true)
-       - `CREATE_MERGE_REQUEST` (default: false)
-       - `ENABLE_GITLAB_STATUS` (default: true)
-       - `ENABLE_TELEGRAM` (default: false)
-     - In the `Pipeline` section:
-       - Definition: `Pipeline script from SCM`
-       - SCM: `Git`
-       - Repository URL: `http://gitlab/pipeline-project-group/pipeline-project.git`
-       - Credentials: Click `Add > Jenkins` and create credentials:
-         - Kind: `Username with password`
-         - Username: Your GitLab username
-         - Password: Your GitLab password
-         - ID: `gitlab-credentials`
-         - Description: `GitLab Credentials`
-       - Select the credentials you just added
-       - Branch Specifier: `*/main`
-       - Script Path: `Jenkinsfile`
-     - Click `Save`
+5. **Create Pipeline Job**:
+   - Name: `appflask-pipeline`
+   - Type: Pipeline
+   - Definition: Pipeline script from SCM
+   - SCM: Git
+   - Repository URL: `http://gitlab/pipeline-project-group/pipeline-project.git`
+   - Credentials: Add your GitLab credentials
+   - Branch: `*/main`
+   - Script Path: `Jenkinsfile`
 
-### Nexus Configuration
+### 2.3 Nexus Configuration
 
 1. **Access Nexus**:
-   Open a browser and navigate to http://localhost:8082
+   - Open http://localhost:8082
+   - Get initial password: `docker exec -it nexus cat /nexus-data/admin.password`
+   - Complete setup and set new admin password
 
-2. **Initial login**:
-   - Username: `admin`
-   - Password: Find the initial password:
-     ```bash
-     docker exec -it nexus cat /nexus-data/admin.password
-     ```
-   - Click `Sign in`
-
-3. **Change the admin password** when prompted
-   - Set a new password
-   - **Important**: Remember this password for Jenkins credentials
-
-4. **Enable anonymous access** (optional for easier testing):
-   - Go to `Settings (gear icon) > Security > Anonymous`
-   - Check `Allow anonymous users to access the server`
-   - Click `Save`
-
-5. **Create a repository for artifacts**:
-   - Go to `Settings (gear icon) > Repository > Repositories`
-   - Click `Create repository`
-   - Select `raw (hosted)`
+2. **Create Repository**:
+   - Go to Server Administration > Repositories > Create repository
+   - Choose recipe: `raw (hosted)`
    - Name: `my-artifacts`
-   - Deployment policy: `Allow redeploy`
-   - Click `Create repository`
+   - Set Deployment policy: `Allow redeploy`
+   - Save
 
-6. **Update Jenkins credentials**:
-   - Go back to Jenkins
-   - Navigate to `Manage Jenkins > Manage Credentials`
-   - Update the Nexus credentials with the new admin password
+### 2.4 Sonarqube Configuration
 
-## Pipeline Usage
+1. **Access Sonarqube**:
+   - Open http://localhost:9000
+   - Login with default credentials (admin/admin)
+   - Create a new password
 
-### Creating and Pushing Code
+2. **Create Project**:
+   - Create a new project manually
+   - Project Key: `appflask`
+   - Display name: `AppFlask`
 
-1. **Clone the GitLab repository locally**:
+3. **Generate Authentication Token**:
+   - Go to My Account > Security > Generate Token
+   - Save the token for Jenkins configuration
+
+4. **Configure Quality Gate**:
+   - Go to Quality Gates
+   - Create or modify the default quality gate
+
+## 3. Kubernetes Setup with Terraform
+
+### 3.1 Update Terraform Variables
+
+Edit `terraform/environments/local/terraform.tfvars`:
+```bash
+# Set your host machine's actual IP address
+host_machine_ip = "192.168.1.x"  # Change this to your IP
+```
+
+### 3.2 Deploy Kind Cluster
+
+```bash
+cd terraform
+./scripts/deploy.sh local
+```
+
+This script:
+1. Initializes Terraform
+2. Creates a Kind Kubernetes cluster
+3. Configures Kubernetes resources for Nexus integration
+4. Installs and configures ArgoCD
+
+After deployment, you can check the status of your resources:
+
+```bash
+# Change workspace
+cd environments/local
+
+# use the local kube-config
+export KUBECONFIG=\terra-home/.kube/config-tf-local # Important to use the kind cluster in your shell session
+
+# View the local cluster
+kubectl get nodes
+
+# Check Flux installation
+kubectl get pods -n flux-system
+
+# Verify Nexus connection
+kubectl get service,endpoints -n nexus
+
+kubectl get all -A
+```
+
+### 3.3 Access ArgoCD
+
+```bash
+# Get the node IP (usually your host IP)
+NODE_IP=$(hostname -I | awk '{print $1}')
+
+# ArgoCD UI URL
+echo "ArgoCD UI: http://$NODE_IP:30888"
+
+# Get ArgoCD initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+Access the ArgoCD UI with:
+- Username: `admin`
+- Password: from the command above
+
+## 4. Application Deployment
+
+### 4.1 Push Application Code to GitLab
+
+1. **Clone the GitLab Repository**:
    ```bash
    git clone http://gitlab.local:8080/pipeline-project-group/pipeline-project.git
    cd pipeline-project
    ```
 
-2. **Add the Flask application files**:
-   - Copy the Flask application folder structure to the repository:
-     ```bash
-     cp -r /path/to/basic-ci-cd/flask-app/* .
-     ```
-
-3. **Commit and push the code**:
+2. **Add Application Files**:
    ```bash
+   # Copy application files from your dev environment
+   cp -r /path/to/basic-ci-cd/appflask/* .
    git add .
-   git commit -m "Initial commit of Flask application"
+   git commit -m "Initial application commit"
    git push origin main
    ```
 
-### Triggering the Pipeline
+### 4.2 Trigger CI/CD Pipeline
 
-1. **Manual trigger**:
-   - Go to Jenkins at http://localhost:8081
-   - Navigate to your pipeline job
-   - Click `Build with Parameters`
-   - Select/deselect the parameters as needed
-   - Click `Build`
+1. **Manual Trigger**:
+   - Go to Jenkins > appflask-pipeline > Build Now
 
-2. **Set up GitLab integration for automatic triggers**:
-   - In GitLab, go to your project
-   - Navigate to `Settings > Integrations`
-   - Find and click on `Jenkins CI` in the integrations list
-   - Configure the Jenkins integration:
-     - Jenkins server URL: `http://jenkins:8080/`
-     - Project name: `appflask-pipeline`
-     - Username: Your Jenkins username (if authentication is enabled)
-     - Password: Your Jenkins password (if authentication is enabled)
-   - Under triggers, select `Push events` and `Merge request events`
-   - Click `Save changes`
-   - Test the integration by clicking `Test > Push events`
+2. **Automatic Trigger**:
+   - Push changes to the repository
+   - Configure webhook in GitLab if not already set
 
-### Monitoring the Pipeline
+### 4.3 Monitor Pipeline Progress
 
-1. **View pipeline progress in Jenkins**:
-   - Click on the running build in Jenkins
-   - Select `Console Output` to see detailed logs
-   - Or use Blue Ocean interface for a visual representation
+1. **Jenkins UI**:
+   - View build progress and logs in Jenkins
+   - Check console output for detailed information
 
-2. **Check build status in GitLab**:
-   - If GitLab integration is set up correctly, you'll see build status in:
-     - GitLab commit history
-     - GitLab merge requests (if applicable)
+2. **Pipeline Parameters**:
+   The pipeline only supports configuring:
+   - `ENABLE_GITLAB_STATUS`: Enable/disable GitLab commit status updates
+   - `ENABLE_TELEGRAM`: Enable/disable Telegram notifications
+   - `ENABLE_METRICS`: Enable/disable Prometheus metrics collection
 
-3. **Telegram notifications** (if configured):
-   - You'll receive messages about pipeline events in your Telegram chat
+### 4.4 Verify ArgoCD Deployment
 
-## Application Deployment
+1. **Check Applications**:
+   - In ArgoCD UI, view the App of Apps application
+   - Verify child applications (dev and prod) are created
 
-### Helm Deployment
+2. **Sync Status**:
+   - Applications should automatically sync
+   - Check sync status and health in the UI
 
-1. **Prepare the Helm chart**:
-   - Make sure Helm chart files are present in the repository:
-     ```bash
-     ls -la helm/flask-app
-     ```
-   - Update `values.yaml` with your configuration if needed
+3. **View Application Details**:
+   - Click on an application to see its resources
+   - View Kubernetes resources and their status
 
-2. **Deploy the application**:
-   ```bash
-   # Deploy with default values
-   helm install appflask ./helm/flask-app
-   
-   # Or with custom values
-   helm install appflask ./helm/flask-app --set replicaCount=3 --set agentName="MyAgent"
-   
-   # Or with a specific version (after pipeline has run)
-   helm install appflask ./helm/flask-app --set appVersion=20240317123456
-   ```
-
-3. **Update an existing deployment**:
-   ```bash
-   helm upgrade appflask ./helm/flask-app --set replicaCount=3
-   ```
-
-### Verifying the Deployment
-
-1. **Check the pods are running**:
-   ```bash
-   kubectl get pods -l app=appflask
-   ```
-
-2. **View pod details and logs**:
-   ```bash
-   kubectl describe pod <pod-name>
-   kubectl logs <pod-name>
-   ```
-
-3. **Check the service is created**:
-   ```bash
-   kubectl get svc appflask-svc
-   ```
-
-### Accessing the Application
-
-1. **Get the NodePort and IP**:
-   ```bash
-   # Get the NodePort
-   kubectl get svc appflask-svc -o jsonpath='{.spec.ports[0].nodePort}'
-   
-   # Get a node IP address
-   kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'
-   ```
-
-2. **Access the application endpoints**:
-   ```bash
-   # Main endpoint
-   curl http://<NODE_IP>:<NODE_PORT>/
-   
-   # Health endpoint
-   curl http://<NODE_IP>:<NODE_PORT>/health
-   ```
-
-3. **Expected output**:
-   - Main endpoint:
-     ```json
-     {
-       "message": "Hello, my name is default Agent version 20240317123456 the time is 12:34"
-     }
-     ```
-   - Health endpoint:
-     ```json
-     {
-       "status": "healthy"
-     }
-     ```
-
-### Version Management
-
-1. **List available versions in Nexus**:
-   - Open http://localhost:8082
-   - Browse to `my-artifacts` repository
-   - Navigate through the folder structure (WmcA/appflask/)
-
-2. **Deploy a specific version**:
-   ```bash
-   helm upgrade appflask ./helm/flask-app --set appVersion=<version>
-   ```
-
-3. **Deploy the latest version**:
-   ```bash
-   helm upgrade appflask ./helm/flask-app --set appVersion=latest
-   ```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **GitLab integration fails to trigger Jenkins**:
-   - Verify Jenkins URL is accessible from GitLab container
-   - Check GitLab outbound request settings (allow local network requests)
-   - Verify the Jenkins project name matches exactly in the integration settings
-   - Check Jenkins logs for authentication issues
-   - Ensure the Jenkins GitLab Plugin is properly installed and configured
-
-2. **Jenkins pipeline fails at Nexus upload stage**:
-   - Verify Nexus credentials in Jenkins
-   - Check Nexus repository exists and is configured correctly
-   - Verify Nexus URL is accessible from Jenkins container
-
-3. **Application pods stuck in pending or failing**:
-   - Check Kubernetes events:
-     ```bash
-     kubectl get events --sort-by='.lastTimestamp'
-     ```
-   - Verify Nexus headless service and endpoint are configured correctly
-   - Check pod logs for errors:
-     ```bash
-     kubectl logs <pod-name>
-     ```
-
-4. **Rate limiting issues**:
-   - The application has a global rate limit of 100 requests per minute
-   - If you hit this limit, you'll receive 429 responses
-   - Wait 60 seconds for the limit to reset
-
-### Logs and Debugging
-
-1. **Container logs**:
-   ```bash
-   docker logs gitlab
-   docker logs jenkins
-   docker logs nexus
-   ```
-
-2. **Kubernetes pod logs**:
-   ```bash
-   kubectl logs <pod-name>
-   ```
-
-3. **Jenkins pipeline logs**:
-   - View in Jenkins UI under the build's `Console Output`
-
-4. **Nexus logs**:
-   ```bash
-   docker exec -it nexus cat /nexus-data/log/nexus.log
-   ```
-
-5. **Application debugging**:
-   - Set `flaskEnv` to `development` in `values.yaml` for more verbose logs
-
-## Advanced Usage
-
-### Custom Pipeline Configuration
-
-You can customize the pipeline behavior using the `jenkins-config.yml` file:
-
-```yaml
-# Jenkins Pipeline Configuration
-runTests: true
-runRuffCheck: true
-runBanditCheck: true
-updateVersion: true
-buildExecutable: true
-archiveExecutable: true
-uploadToNexus: true
-pushGitChanges: true
-createMergeRequest: false
-enableGitlabStatus: true
-enableTelegram: false
-```
-
-Add this file to your repository and commit it to control pipeline behavior.
-
-### Rate Limit Testing
-
-Test the rate limiting functionality with a simple bash script:
+### 4.5 Test Application Endpoints
 
 ```bash
-#!/bin/bash
-COUNT=0
-LIMIT=110
-URL="http://<NODE_IP>:<NODE_PORT>/"
+# Dev environment
+curl http://$NODE_IP:30080/
+curl http://$NODE_IP:30080/health
+curl http://$NODE_IP:30080/metrics
 
-echo "Sending $LIMIT requests to $URL"
-
-for i in $(seq 1 $LIMIT); do
-  RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null $URL)
-  COUNT=$((COUNT + 1))
-  echo "Request $COUNT: Status $RESPONSE"
-  if [ "$RESPONSE" -eq 429 ]; then
-    echo "Rate limit hit after $COUNT requests"
-    break
-  fi
-done
-
-echo "Test complete"
+# Prod environment
+curl http://$NODE_IP:30180/
+curl http://$NODE_IP:30180/health
+curl http://$NODE_IP:30180/metrics
 ```
 
-### Webhook Configuration
+## 5. Ongoing Development Workflow
 
-For more advanced webhook settings:
-
-1. **Jenkins-GitLab Integration Settings**:
-   - Go to your pipeline job
-   - Click `Configure`
-   - Under `Build Triggers`, select `Build when a change is pushed to GitLab`
-   - Advanced settings allow you to control:
-     - Push events
-     - Merge request events
-     - Branch filtering
-     - Comment triggers
-   - These settings need to align with the events you've enabled in the GitLab integration
-
-2. **GitLab CI Skip**:
-   - Add `[ci skip]` to commit messages to prevent pipeline triggering
-
-## Cleanup
-
-When you're done using the environment:
-
-1. **Stop the containers**:
+1. **Make Code Changes**:
    ```bash
-   make stop
-   # or
-   docker compose -f srcs/docker-compose.yaml stop
+   # Make changes to the application code
+   git add .
+   git commit -m "Update application"
+   git push origin main
    ```
 
-2. **Remove the containers**:
-   ```bash
-   make down
-   # or
-   docker compose -f srcs/docker-compose.yaml down
-   ```
+2. **CI/CD Process**:
+   - Jenkins pipeline triggers automatically
+   - Code is tested, analyzed, built, and packaged
+   - Binary is uploaded to Nexus
+   - ArgoCD branch is updated
+   - ArgoCD detects changes and syncs applications
 
-3. **Complete cleanup**:
-   ```bash
-   make prune
-   # or
-   docker compose -f srcs/docker-compose.yaml down -v
-   docker rmi $(docker images -q 'my_*')
-   ```
+3. **ArgoCD Sync Policy**:
+   - ArgoCD automatically syncs applications when changes are detected
+   - Applications self-heal if cluster state diverges from Git definition
 
-4. **Uninstall Kubernetes resources**:
-   ```bash
-   helm uninstall appflask
-   kubectl delete namespace nexus
-   ```
+## 6. Monitoring
 
----
+### 6.1 Prometheus and Grafana
 
-Congratulations! You have now set up and used a complete CI/CD pipeline with GitLab, Jenkins, Nexus, and Kubernetes. This pipeline automatically tests, builds, and delivers your application, with the ability to deploy specific versions to your Kubernetes cluster.
+1. **Access Prometheus**:
+   - Open http://localhost:9090
+   - Check targets at http://localhost:9090/targets
+
+2. **Access Grafana**:
+   - Open http://localhost:3000
+   - Login with admin/admin
+   - View dashboards for:
+     - Flask Application Metrics
+     - Jenkins Pipeline Performance
+     - Container Monitoring
+
+### 6.2 Test Metrics Collection
+
+Use the provided test scripts:
+```bash
+# Test rate limiting and metrics
+bash appflask/test_scripts/comprehensive-rate-test.sh
+
+# Test Prometheus queries
+bash appflask/test_scripts/test_query.sh
+
+# Test alerting
+bash appflask/test_scripts/alert-testing-script.sh
+```
+
+## 7. Troubleshooting
+
+### 7.1 Pipeline Issues
+
+1. **Sonarqube Analysis Fails**:
+   - Verify Sonarqube token in Jenkins credentials
+   - Check Sonarqube is running and accessible from Jenkins
+
+2. **Nexus Upload Fails**:
+   - Verify Nexus credentials in Jenkins
+   - Check Nexus repository exists and is accessible
+
+3. **ArgoCD Branch Update Fails**:
+   - Check GitLab credentials and permissions
+   - Verify branch exists or can be created
+
+### 7.2 ArgoCD Issues
+
+1. **Application Out of Sync**:
+   - Check ArgoCD logs: `kubectl logs -n argocd deploy/argocd-application-controller`
+   - Manually sync the application in the UI
+   - Verify Git repository is accessible
+
+2. **Application Health Issues**:
+   - View application resources in ArgoCD UI
+   - Check pod logs: `kubectl logs -n <namespace> <pod-name>`
+
+### 7.3 Terraform/Kind Cluster Issues
+
+1. **Terraform Apply Fails**:
+   - Check host_machine_ip is set correctly
+   - Ensure Docker has sufficient resources
+   - Look for specific error messages
+
+2. **Cluster Not Accessible**:
+   - Verify kubeconfig: `terraform output kubeconfig_path`
+   - Export KUBECONFIG: `export KUBECONFIG=$(terraform output -raw kubeconfig_path)`
+
+## 8. Cleanup
+
+### 8.1 Terraform Cleanup
+
+```bash
+cd terraform
+./scripts/cleanup.sh local
+```
+
+### 8.2 Docker Compose Cleanup
+
+```bash
+make down   # Stop containers
+make prune  # Remove containers, volumes, and images
+```
+
+## 9. Key Paths and URLs
+
+### 9.1 Services
+
+- GitLab: http://gitlab.local:8080
+- Jenkins: http://localhost:8081
+- Nexus: http://localhost:8082
+- Sonarqube: http://localhost:9000
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000
+- ArgoCD: http://<NODE_IP>:30888
+
+### 9.2 Application Endpoints
+
+- Dev environment: http://<NODE_IP>:30080
+- Prod environment: http://<NODE_IP>:30180
