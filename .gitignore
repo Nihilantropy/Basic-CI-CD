@@ -7,9 +7,9 @@ jenkins-cli.jar
 build/
 dist/
 appflask.egg-info
-*.env
+# *.env
 terra-home*
 .terraform.lock.hcl
 .terraform*
-terraform.tfstate*
+*tfstate*
 deployment.tfplan

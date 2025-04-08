@@ -15,11 +15,6 @@ output "argocd_ui_url" {
   value       = "http://<node-ip>:${var.argocd_ui_nodeport}"
 }
 
-output "application_url" {
-  description = "URL to access the deployed application"
-  value       = "http://<node-ip>:${var.app_nodeport}"
-}
-
 output "argocd_server_service" {
   description = "Name of the ArgoCD server service"
   value       = "argocd-server.${kubernetes_namespace.argocd.metadata[0].name}.svc.cluster.local"

@@ -7,6 +7,18 @@ resource "kubernetes_namespace" "argocd" {
     labels = {
       "app.kubernetes.io/managed-by" = "terraform"
     }
+    
+    # Add this finalizer annotation to ensure namespace can be deleted properly
+    annotations = {
+      "argocd.argoproj.io/sync-wave" = "-1"  # Ensure namespace is created first, deleted last
+    }
+  }
+  
+  # This lifecycle block ensures we remove finalizers before deletion
+  lifecycle {
+    ignore_changes = [
+      metadata[0].annotations["kubectl.kubernetes.io/last-applied-configuration"],
+    ]
   }
 }
 
@@ -55,6 +67,35 @@ resource "helm_release" "argocd" {
   set {
     name  = "controller.enableStatefulSet"
     value = "false"  # Use Deployment for the controller
+  }
+  
+  # Add these settings to manage finalizers
+  set {
+    name  = "server.config.resource.customizations.\"argoproj.io/Application\"" 
+    value = <<EOT
+      {
+        "cascadedDeletion": {
+          "enabled": true
+        }
+      }
+    EOT
+  }
+  
+  set {
+    name  = "server.config.resource.customizations.\"apps/Deployment\"" 
+    value = <<EOT
+      {
+        "cascadedDeletion": {
+          "enabled": true
+        }
+      }
+    EOT
+  }
+  
+  # This ensures ArgoCD removes finalizers during uninstallation
+  set {
+    name  = "controller.args.appResyncPeriod" 
+    value = "30"
   }
   
   # Wait for installation to complete

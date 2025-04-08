@@ -82,7 +82,6 @@ module "argocd" {
   
   # Customize ArgoCD and application settings
   argocd_ui_nodeport     = 30888  # Choose an available NodePort for ArgoCD UI
-  app_nodeport           = 30180  # As requested, different from Flux (30080)
   
   depends_on = [
     null_resource.cluster_ready_check,

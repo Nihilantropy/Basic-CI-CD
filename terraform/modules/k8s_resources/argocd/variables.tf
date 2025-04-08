@@ -30,19 +30,6 @@ variable "argocd_ui_nodeport" {
   default     = 30888  # Consider your port allocation strategy
 }
 
-# Application deployment variables
-variable "app_namespace" {
-  description = "Namespace where the application should be deployed"
-  type        = string
-  default     = "appflask-argo"  # Different from the Flux-managed namespace
-}
-
-variable "app_nodeport" {
-  description = "NodePort for the application service"
-  type        = number
-  default     = 30180  # As requested, different from Flux deployment
-}
-
 # GitOps repository variables
 variable "gitops_repo_url" {
   description = "URL of the Git repository containing GitOps configuration"
@@ -56,11 +43,18 @@ variable "gitops_repo_target_revision" {
   default     = "argocd"  # Match your Flux configuration
 }
 
-# Application configuration
+# App-of-Apps configuration
 variable "app_name" {
-  description = "Name of the Application CR"
+  description = "Name of the app-of-apps CR"
   type        = string
-  default     = "appflask-argo"
+  default     = "app-of-apps"
+}
+
+# App-of-Apps deployment variables
+variable "app_namespace" {
+  description = "Namespace where the app-of-apps should be deployed"
+  type        = string
+  default     = "argo-app-of-apps"
 }
 
 variable "sync_policy_automated" {
@@ -85,7 +79,7 @@ variable "sync_policy_self_heal" {
 variable "argocd_gitlab_username" {
   description = "GitLab username for authentication"
   type        = string
-  default     = "oauth2"  # Similar to Flux configuration
+  default     = "oauth2"
 }
 
 variable "argocd_gitlab_token" {

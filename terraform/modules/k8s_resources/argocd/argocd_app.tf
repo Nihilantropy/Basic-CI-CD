@@ -6,8 +6,8 @@ resource "kubectl_manifest" "argocd_root_application" {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
     metadata = {
-      name       = "app-of-apps"
-      namespace  = var.argocd_namespace
+      name       = var.app_name
+      namespace  = var.app_namespace
       finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {

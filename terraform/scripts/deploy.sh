@@ -22,6 +22,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m'  # No Color
 
 # Set default environment and handle parameter
@@ -78,7 +79,8 @@ echo -e "${YELLOW}Step 4: Verifying deployed resources${NC}"
 
 # Get kubeconfig from Terraform outputs if possible
 if terraform output -raw kubeconfig_path >/dev/null 2>&1; then
-  export KUBECONFIG=$(terraform output -raw kubeconfig_path)
+  KUBECONFIG_PATH=$(terraform output -raw kubeconfig_path)
+  export KUBECONFIG="${KUBECONFIG_PATH}"
   echo -e "${BLUE}Using kubeconfig: ${KUBECONFIG}${NC}"
 
   # Verify cluster and resources
@@ -94,15 +96,55 @@ if terraform output -raw kubeconfig_path >/dev/null 2>&1; then
     echo -e "${BLUE}Checking Nexus service in namespace ${NEXUS_NS}:${NC}"
     kubectl get service,endpoints -n "$NEXUS_NS" 
   fi
+
+  # Check ArgoCD resources if namespace exists
+  if kubectl get namespace argocd &>/dev/null; then
+    echo -e "${BLUE}Checking ArgoCD resources:${NC}"
+    kubectl get pods -n argocd
+    echo
+    echo -e "${BLUE}ArgoCD Applications:${NC}"
+    kubectl get applications -n argocd
+    
+    # Get ArgoCD admin password command
+    if terraform output -raw argocd_initial_password_command &>/dev/null; then
+      ARGOCD_PASSWORD_CMD=$(terraform output -raw argocd_initial_password_command)
+      echo -e "${BLUE}ArgoCD admin password command:${NC}"
+      echo -e "${CYAN}${ARGOCD_PASSWORD_CMD}${NC}"
+    fi
+    
+    # Get ArgoCD UI URL
+    if terraform output -raw argocd_ui_url &>/dev/null; then
+      ARGOCD_UI_URL=$(terraform output -raw argocd_ui_url)
+      echo -e "${BLUE}ArgoCD UI URL:${NC} ${CYAN}${ARGOCD_UI_URL}${NC}"
+      echo -e "${BLUE}   (access with username: admin and the password from above)${NC}"
+    fi
+  fi
+  
+  # Display all resources for comprehensive overview
+  echo
+  echo -e "${BLUE}All deployed resources:${NC}"
+  kubectl get all --all-namespaces
 else
   echo -e "${YELLOW}No kubeconfig output found. Skipping Kubernetes verification.${NC}"
 fi
 
-echo -e "${GREEN}Deployment complete!${NC}"
 echo
-echo -e "${BLUE}You can now use your infrastructure.${NC}"
-echo -e "${BLUE}To apply changes, run: terraform apply${NC}"
-echo -e "${BLUE}To destroy everything, run: ../../scripts/cleanup.sh ${ENVIRONMENT}${NC}"
+echo -e "${GREEN}===========================================================${NC}"
+echo -e "${GREEN}🎉 Deployment complete! 🎉${NC}"
+echo -e "${GREEN}===========================================================${NC}"
+echo
+echo -e "${YELLOW}To use this Kubernetes cluster:${NC}"
+echo
+echo -e "${CYAN}# Run this command in your terminal to set the kubeconfig:${NC}"
+echo -e "${GREEN}export KUBECONFIG=${ENVIRONMENT_DIR}/terra-home/.kube/config-tf-${ENVIRONMENT}${NC}"
+echo
+echo -e "${YELLOW}Or, if you're already in the ${ENVIRONMENT} directory:${NC}"
+echo -e "${GREEN}export KUBECONFIG=\$(terraform output -raw kubeconfig_path)${NC}"
+echo
+echo -e "${YELLOW}Useful commands:${NC}"
+echo -e "- To view deployed services: ${GREEN}kubectl get svc --all-namespaces${NC}"
+echo -e "- To apply changes: ${GREEN}terraform apply${NC}"
+echo -e "- To destroy everything: ${GREEN}../../scripts/cleanup.sh ${ENVIRONMENT}${NC}"
 echo
 
 # Note: The cleanup function will run automatically on exit due to the trap
