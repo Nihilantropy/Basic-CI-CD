@@ -81,6 +81,7 @@ Wait for all services to initialize (can take 3-5 minutes).
    - Select Active, Push (trigger) and input `http://jenkins:8080` in the Jenkins server url section
    - Disable ssl verification
    - Input Jenkins username and password of the jenkins user
+   - Test the connectiom
 
 ### 2.2 Jenkins Configuration
 
@@ -95,7 +96,7 @@ Wait for all services to initialize (can take 3-5 minutes).
      - Name: `gitlab-local`
      - URL: `http://gitlab:80/`
      - Credentials: Add GitLab API token from previous step
-     - Test connection
+     - Test the connection
 
 3. **Configure Nexus Credentials**:
    - Go to Manage Jenkins > Manage Credentials > Add Credentials
