@@ -67,6 +67,13 @@ Wait for all services to initialize (can take 3-5 minutes).
    - Go to Admin Area > Settings > Network
    - Enable "Allow requests to the local network from webhooks and integrations"
    - Add local networks to the allowlist: `127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, jenkins`
+  
+5. **Clone the repository and configure**
+   - clone the repository using `git clone http://gitlab.local/pipeline-project-group/pipeline-project.git`
+   - go into the repo with `cd pipeline-project`
+   - now we have to configure the git config to enable authenticated push and use the correct port using `nano .git/config`
+   - replace the repo url with this one: url = http://root:<your-access-token>@gitlab.local:8080/pipeline-project-group/pipeline-project.git (replace <your-access-token> with YOUR access token)
+   - try to create a file, commit and push to the repo for test
 
 ### 2.2 Jenkins Configuration
 
