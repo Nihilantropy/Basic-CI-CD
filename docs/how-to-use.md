@@ -74,6 +74,13 @@ Wait for all services to initialize (can take 3-5 minutes).
    - now we have to configure the git config to enable authenticated push and use the correct port using `nano .git/config`
    - replace the repo url with this one: url = http://root:<your-access-token>@gitlab.local:8080/pipeline-project-group/pipeline-project.git (replace <your-access-token> with YOUR access token)
    - try to create a file, commit and push to the repo for test
+  
+6. **Enable integration with Jenkins** (configure jenkins first)
+   - Go to the pipeline-project settings
+   - Go to Integrations and search Jenkins
+   - Select Active, Push (trigger) and input `http://jenkins:8080` in the Jenkins server url section
+   - Disable ssl verification
+   - Input Jenkins username and password of the jenkins user
 
 ### 2.2 Jenkins Configuration
 
