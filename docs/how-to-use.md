@@ -100,12 +100,9 @@ Wait for all services to initialize (can take 3-5 minutes).
 5. **Create Pipeline Job**:
    - Name: `appflask-pipeline`
    - Type: Pipeline
-   - Definition: Pipeline script from SCM
-   - SCM: Git
-   - Repository URL: `http://gitlab/pipeline-project-group/pipeline-project.git`
-   - Credentials: Add your GitLab credentials
-   - Branch: `*/main`
-   - Script Path: `Jenkinsfile`
+   - Git lab connection: gitlab-local
+   - Repository name: `pipeline-project-group/pipeline-project`
+   - Build when a change is pushed to GitLab: enable, select push events trigger
 
 ### 2.3 Nexus Configuration
 
