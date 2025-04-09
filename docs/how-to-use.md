@@ -118,6 +118,9 @@ Wait for all services to initialize (can take 3-5 minutes).
    - Git lab connection: gitlab-local
    - Repository name: `pipeline-project-group/pipeline-project`
    - Build when a change is pushed to GitLab: enable, select push events trigger
+   - In the pipeline configuration, in definition, select `pipelien script from SCM`, SCM GIT and repository url `http://gitlab/pipeline-project-group/pipeline-project`
+   - Create new creadential type username and password with `root` and `<your-access-token>`
+   - Write `/main` in branch
 
 ### 2.3 Nexus Configuration
 
