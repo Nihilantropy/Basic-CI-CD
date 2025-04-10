@@ -10,7 +10,7 @@ This guide provides step-by-step instructions for setting up and using the CI/CD
 - **Terraform**: Version 1.0.0 or newer
 - **kubectl**: Version 1.24+ or newer
 - **jq**: For JSON processing in scripts (optional but recommended)
-- **DNS entry** for `gitlab.local` pointing to localhost (add to `/etc/hosts`)
+- **DNS entry** for `gitlab.local` pointing to localhost (add to `/etc/hosts`) // TODO remove
 
 ## 1. Base Environment Setup
 
@@ -51,7 +51,7 @@ Wait for all services to initialize (can take 3-5 minutes).
 ### 2.1 GitLab Configuration
 
 1. **Access GitLab**:
-   - Open http://gitlab.local:8080
+   - Open http://localhost:8080
    - Login with username: `root` and the password from `make show` output or `docker logs gitlab | grep 'Password:'`
 
 2. **Create Project Group and Repository**:
