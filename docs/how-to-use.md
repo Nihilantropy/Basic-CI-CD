@@ -61,11 +61,14 @@ This starts:
    # Clone the repository
    git clone http://localhost:8080/pipeline-project-group/pipeline-project.git
    cd pipeline-project
-   
+   ```
    # Edit Git config to use authentication
-   nano .git/config
    # Replace URL with: http://root:<your-access-token>@localhost:8080/pipeline-project-group/pipeline-project.git
-   
+   ```bash
+   nano .git/config
+   ```
+
+   ```bash   
    # Test with a sample commit
    touch test.txt
    git add test.txt
