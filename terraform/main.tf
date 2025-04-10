@@ -78,7 +78,7 @@ module "argocd" {
   source                 = "./modules/k8s_resources/argocd"
   kubeconfig_path        = abspath(module.cluster.kubeconfig_path)
   argocd_gitlab_token    = chomp(file("~/.tokens/gitlab/gitlab.local/personal/root.token"))
-  gitops_repo_url        = "http://var.host_machine_ip:8080/pipeline-project-group/pipeline-project.git"
+  gitops_repo_url        = "http://local.host_machine_ip:8080/pipeline-project-group/pipeline-project.git"
   
   # Customize ArgoCD and application settings
   argocd_ui_nodeport     = 30888  # Choose an available NodePort for ArgoCD UI
