@@ -20,12 +20,6 @@ pipeline {
 
         // metrics
         booleanParam(name: 'ENABLE_METRICS', defaultValue: false, description: 'Enable Prometheus metrics')
-
-        booleanParam(
-            name: 'AUTO_MERGE_TO_MAIN',
-            defaultValue: true,
-            description: 'Automatically merge changes to main branch if all checks pass'
-        )
     }
 
     environment {
@@ -34,16 +28,15 @@ pipeline {
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "nexus:8081"
         NEXUS_REPO = "my-artifacts"
-        NEXUS_CREDENTIALS_ID = "bb41509b-d0cc-4f65-94a4-755c22441930"
+        NEXUS_CREDENTIALS_ID = "nexus-credentials-id"
         GROUP_ID = "WmcA"
         ARTIFACT_ID = "appflask"
         
         // Git configuration for pushing changes
-        GITLAB_CREDENTIALS_ID = "gitlab-credentials"
-        GITLAB_EMAIL = credentials('gitlab-email-crea')
+        GITLAB_CREDENTIALS_ID = "gitlab-access-token"
 
         // SonarQube configuration
-        SONAR_CREDENTIALS_ID = "sonarqube_token"
+        SONAR_CREDENTIALS_ID = "sonar-jenkins-token"
         
         // Timestamp to use throughout the pipeline - in format yearmonthday hour minutes seconds
         TIMESTAMP = sh(script: 'date +%Y%m%d%H%M%S', returnStdout: true).trim()
@@ -306,7 +299,7 @@ pipeline {
                         ]) {
                             // Set up Git configuration
                             sh '''
-                                git config user.email "${GITLAB_EMAIL}"
+                                git config user.email "root@example.com"
                                 git config user.name "${USERNAME}"
                             '''
                             
