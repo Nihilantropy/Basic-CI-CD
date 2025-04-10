@@ -4,12 +4,22 @@ This guide provides step-by-step instructions for setting up and using the CI/CD
 
 ## Prerequisites
 
+<<<<<<< HEAD
 - Docker v20.10.x+
 - Docker Compose v2.x+
 - Git v2.x+
 - Terraform v1.0.0+
 - kubectl v1.24+
 - jq (optional, for JSON processing)
+=======
+- **Docker**: Version 20.10.x or newer
+- **Docker Compose**: Version 2.x or newer
+- **Git**: Version 2.x or newer
+- **Terraform**: Version 1.0.0 or newer
+- **kubectl**: Version 1.24+ or newer
+- **jq**: For JSON processing in scripts (optional but recommended)
+- **DNS entry** for `gitlab.local` pointing to localhost (add to `/etc/hosts`) // TODO remove
+>>>>>>> 74173a43ba3c3077d2f6de5356910dcab1698d88
 
 ## 1. Base Environment Setup
 
@@ -37,10 +47,16 @@ This starts:
 
 ### 2.1 GitLab Setup
 
+<<<<<<< HEAD
 1. **Access GitLab**
    - URL: http://localhost:8080
    - Email: `admin@example.com`
    - Password: `SuperSecurePassword123`
+=======
+1. **Access GitLab**:
+   - Open http://localhost:8080
+   - Login with username: `root` and the password from `make show` output or `docker logs gitlab | grep 'Password:'`
+>>>>>>> 74173a43ba3c3077d2f6de5356910dcab1698d88
 
 2. **Create Project Structure**
    - Create group: `pipeline-project-group`
