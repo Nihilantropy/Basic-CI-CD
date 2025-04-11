@@ -19,6 +19,11 @@ variable "helm_timeout" {
   default     = 600  # ArgoCD can take time to initialize
 }
 
+variable "host_machine_ip" {
+  description = "host machine ip address for argo"
+  
+}
+
 variable "kubeconfig_path" {
   description = "Path to the kubeconfig file"
   type        = string
@@ -48,13 +53,6 @@ variable "app_name" {
   description = "Name of the app-of-apps CR"
   type        = string
   default     = "app-of-apps"
-}
-
-# App-of-Apps deployment variables
-variable "app_namespace" {
-  description = "Namespace where the app-of-apps should be deployed"
-  type        = string
-  default     = "argo-app-of-apps"
 }
 
 variable "sync_policy_automated" {

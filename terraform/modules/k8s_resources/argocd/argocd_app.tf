@@ -7,7 +7,7 @@ resource "kubectl_manifest" "argocd_root_application" {
     kind       = "Application"
     metadata = {
       name       = var.app_name
-      namespace  = var.app_namespace
+      namespace  = var.argocd_namespace
       finalizers = ["resources-finalizer.argocd.argoproj.io"]
     }
     spec = {

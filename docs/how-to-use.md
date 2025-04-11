@@ -9,6 +9,7 @@ This guide provides step-by-step instructions for setting up and using the CI/CD
 - Git v2.x+
 - Terraform v1.0.0+
 - kubectl v1.24+
+- kind v0.20.0+
 - jq (optional, for JSON processing)
 
 ## 1. Base Environment Setup
@@ -16,10 +17,19 @@ This guide provides step-by-step instructions for setting up and using the CI/CD
 ### 1.1 Clone the Repository
 ```bash
 git clone https://github.com/Nihilantropy/Basic-CI-CD.git
-cd basic-ci-cd
+cd Basic-Ci-Cd
 ```
 
-### 1.2 Start Docker Compose Environment
+### 1.2 Replace PLACEHOLDER_URL
+
+Get your machine ip address
+   ```bash
+   hostname -I | awk '{print $1}'
+   ```
+
+Use a *search and replace* instrument to replace all the occur '${PLACEHOLDER_URL}' (quote not included) with the result of the previous command
+
+### 1.3 Start Docker Compose Environment
 ```bash
 make all
 ```
@@ -165,6 +175,10 @@ Before proceeding with Jenkins configuration, ensure the following essential plu
    - Name: `my-artifacts`
    - Deployment policy: `Allow redeploy`
    - Click "Create repository"
+
+3. **Allow anonymous access**
+   - Go to Settings -> Security -> Anonymous access
+   - enable Allow anonymous users to access the server
 
 ### 2.4 SonarQube Setup
 

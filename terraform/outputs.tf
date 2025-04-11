@@ -44,11 +44,6 @@ output "argocd_namespace" {
   value       = module.argocd.argocd_namespace
 }
 
-output "argocd_app_namespace" {
-  description = "Namespace where ArgoCD deploys the application"
-  value       = module.argocd.app_namespace
-}
-
 output "argocd_ui_url" {
   description = "URL to access the ArgoCD UI"
   value       = module.argocd.argocd_ui_url

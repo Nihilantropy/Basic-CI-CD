@@ -22,16 +22,6 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
-# Create the application namespace
-resource "kubernetes_namespace" "app_namespace" {
-  metadata {
-    name = var.app_namespace
-    labels = {
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-  }
-}
-
 # Install ArgoCD using Helm
 resource "helm_release" "argocd" {
   name       = "argocd"
@@ -109,20 +99,18 @@ resource "helm_release" "argocd" {
 resource "kubernetes_secret" "argocd_repo_creds" {
   metadata {
     name      = "argocd-gitlab-auth"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
+    namespace = "argocd"
     labels = {
-      "argocd.argoproj.io/secret-type" = "repository"
+      "argocd.argoproj.io/secret-type": "repo-creds"  # Changed from "repository" to "repo-creds"
     }
   }
 
   data = {
-    type          = "git"
-    url           = var.gitops_repo_url
-    username      = var.argocd_gitlab_username
-    password      = var.argocd_gitlab_token
+    type     = "git"
+    url      = "http://${var.host_machine_ip}:8080"  # Base URL without the specific repository path
+    username = "oauth2"
+    password = var.argocd_gitlab_token
   }
-
-  depends_on = [helm_release.argocd]
 }
 
 # Resource to ensure ArgoCD is fully initialized before defining applications

@@ -294,32 +294,28 @@ pipeline {
             steps {
                 script {
                     utils.runStage('git-push', 'Updating repositories and tagging release... 📤') {
-                        withCredentials([
-                            usernamePassword(credentialsId: env.GITLAB_CREDENTIALS_ID, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
-                        ]) {
-                            // Set up Git configuration
-                            sh '''
-                                git config user.email "root@example.com"
-                                git config user.name "${USERNAME}"
-                            '''
-                            
-                            // Prepare all file changes (stage but don't commit)
-                            def versionInfoUpdated = utils.prepareVersionInfo()
-                            def helmChartUpdated = utils.prepareHelmChartVersion()
-                            
-                            // Single commit and push for all changes
-                            if (versionInfoUpdated || helmChartUpdated) {
-                                def commitMessage = "Update version to ${env.TIMESTAMP} for release"
-                                utils.commitAndPushChanges(commitMessage)
-                                utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}.")
-                            }
-                            
-                            // Create and push tag after main branch is updated
-                            utils.createReleaseTag()
-                            
-                            // Notify about successful operations
-                            utils.notify("Jenkins: Tag ${env.TIMESTAMP} created successfully.")
+                        // Set up Git configuration using shell commands with proper quoting
+                        sh '''
+                            git config user.email "root@example.com"
+                            git config user.name "root"
+                        '''
+                        
+                        // Prepare all file changes (stage but don't commit)
+                        def versionInfoUpdated = utils.prepareVersionInfo()
+                        def helmChartUpdated = utils.prepareHelmChartVersion()
+                        
+                        // Single commit and push for all changes
+                        if (versionInfoUpdated || helmChartUpdated) {
+                            def commitMessage = "Update version to ${env.TIMESTAMP} for release"
+                            utils.commitAndPushChanges(commitMessage)
+                            utils.notify("Jenkins: Version ${env.TIMESTAMP} pushed to current branch ${env.GIT_BRANCH}.")
                         }
+                        
+                        // Create and push tag after main branch is updated
+                        utils.createReleaseTag()
+                        
+                        // Notify about successful operations
+                        utils.notify("Jenkins: Tag ${env.TIMESTAMP} created successfully.")
                     }
                 }
             }

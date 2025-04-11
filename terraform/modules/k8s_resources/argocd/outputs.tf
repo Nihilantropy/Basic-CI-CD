@@ -5,11 +5,6 @@ output "argocd_namespace" {
   value       = kubernetes_namespace.argocd.metadata[0].name
 }
 
-output "app_namespace" {
-  description = "The namespace where the application is deployed"
-  value       = kubernetes_namespace.app_namespace.metadata[0].name
-}
-
 output "argocd_ui_url" {
   description = "URL to access the ArgoCD UI"
   value       = "http://<node-ip>:${var.argocd_ui_nodeport}"

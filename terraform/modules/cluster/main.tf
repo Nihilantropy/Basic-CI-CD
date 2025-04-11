@@ -36,26 +36,26 @@ resource "kind_cluster" "local" {
         # Common NodePort for application access
         extra_port_mappings {
           container_port = 30080
-          host_port      = 30080 + node.key
+          host_port      = 30080 # + node.key
           protocol       = "TCP"
         }
         
         # Add optional secondary NodePort if needed
         extra_port_mappings {
           container_port = 30443
-          host_port      = 30443 + node.key  # Use unique host ports per worker
+          host_port      = 30443 # + node.key  # Use unique host ports per worker
           protocol       = "TCP"
         }
 
         extra_port_mappings {
           container_port = 30180
-          host_port      = 30180 + node.key  # Use unique host ports per worker
+          host_port      = 30180 # + node.key  # Use unique host ports per worker
           protocol       = "TCP"
         }
 
         extra_port_mappings {
           container_port = 30888
-          host_port      = 30888 + node.key  # Use unique host ports per worker
+          host_port      = 30888 # + node.key  # Use unique host ports per worker
           protocol       = "TCP"
         }
       }
